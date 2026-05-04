@@ -110,54 +110,38 @@
 
 /* ── Manager Panel ───────────────────────────────────────── */
 
-/* Backdrop overlay */
+/* Backdrop overlay — covers everything including ST transforms */
 #ct_ext_manager_backdrop {
     position: fixed;
-    inset: 0;
-    z-index: 9998;
-    background: rgba(0, 0, 0, 0.55);
-    backdrop-filter: blur(3px);
-    -webkit-backdrop-filter: blur(3px);
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 100000;
+    background: rgba(0, 0, 0, 0.6);
 }
 
+/* Panel — always centered in the viewport */
 #ct_ext_manager {
     position: fixed;
-    /* Sits just below top safe area, full width on mobile */
-    top: 50%;
+    top: 10vh;
     left: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 9999;
+    transform: translateX(-50%);
+    z-index: 100001;
 
-    /* Desktop: floating card */
-    width: 540px;
-    max-width: 96vw;
-    max-height: 82vh;
+    width: 92vw;
+    max-width: 520px;
+    max-height: 80vh;
 
     display: flex;
     flex-direction: column;
-    background: var(--SmartThemeBlurTintColor, #1e2130);
+    background: var(--SmartThemeBlurTintColor, #23263a);
     border: 1px solid var(--SmartThemeBorderColor, rgba(255,255,255,0.15));
-    border-radius: 12px;
-    box-shadow: 0 8px 40px rgba(0,0,0,0.65);
+    border-radius: 14px;
+    box-shadow: 0 12px 48px rgba(0,0,0,0.7);
     overflow: hidden;
     font-size: 13px;
     color: var(--SmartThemeBodyColor, #ccc);
-}
-
-/* Mobile: slide up from bottom, full width */
-@media (max-width: 600px) {
-    #ct_ext_manager {
-        top: auto;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        transform: none;
-        width: 100%;
-        max-width: 100%;
-        max-height: 90vh;
-        border-radius: 16px 16px 0 0;
-        border-bottom: none;
-    }
 }
 
 /* Header */
