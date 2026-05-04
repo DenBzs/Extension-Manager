@@ -53,21 +53,34 @@ function injectDeleteButton() {
 // FEATURE 2 — Extension Manager
 // ============================================================
 
-// Scan ALL .inline-drawer in the whole document that are
-// extension entries: they must contain an .inline-drawer-toggle
-// with a <b> tag, and must NOT be nested inside another .inline-drawer
+// Scan extensions ONLY inside #extensions_settings
+// Top-level = direct child of #extensions_settings, or child of a non-drawer wrapper inside it
 function scanExtensions() {
+    const container = document.getElementById('extensions_settings');
+    if (!container) return [];
     const results = [];
-    document.querySelectorAll('.inline-drawer').forEach(el => {
-        // Skip if nested inside another inline-drawer
-        if (el.parentElement && el.parentElement.closest('.inline-drawer')) return;
-        // Must have a toggle with a <b> name tag
-        const toggle = el.querySelector('.inline-drawer-toggle');
-        if (!toggle) return;
-        const b = toggle.querySelector('b');
-        if (!b) return;
-        const name = b.textContent.trim();
-        if (name) results.push({ name, el });
+    // Walk only direct children and their direct children
+    // to avoid going deep into extension content panels
+    container.childNodes.forEach(child => {
+        if (!(child instanceof Element)) return;
+        // Direct .inline-drawer child
+        if (child.classList.contains('inline-drawer')) {
+            const b = child.querySelector(':scope > .inline-drawer-toggle b');
+            if (b && b.textContent.trim()) {
+                results.push({ name: b.textContent.trim(), el: child });
+            }
+        } else if (!child.classList.contains('inline-drawer')) {
+            // Non-drawer wrapper (e.g. a plain div grouping some extensions)
+            child.childNodes.forEach(grandchild => {
+                if (!(grandchild instanceof Element)) return;
+                if (grandchild.classList.contains('inline-drawer')) {
+                    const b = grandchild.querySelector(':scope > .inline-drawer-toggle b');
+                    if (b && b.textContent.trim()) {
+                        results.push({ name: b.textContent.trim(), el: grandchild });
+                    }
+                }
+            });
+        }
     });
     return results;
 }
@@ -128,7 +141,7 @@ function renderPanel() {
     // Header
     panel.innerHTML = `
         <div class="ct-header">
-            <span class="ct-title"><i class="fa-solid fa-layer-group"></i> Extension 관리자</span>
+            <span class="ct-title"><i class="fa-solid fa-layer-group"></i> 확장 관리자</span>
             <div class="ct-hbtns">
                 <button class="ct-btn ct-sm" id="ct_add_group"><i class="fa-solid fa-folder-plus"></i> 그룹 추가</button>
                 <button class="ct-btn ct-primary ct-sm" id="ct_apply"><i class="fa-solid fa-check"></i> 적용</button>
