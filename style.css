@@ -228,3 +228,10 @@
     font-weight: 400;
     color: #b09040;
 }
+
+/* ── Remove ST default text-shadow from extension names ─── */
+#extensions_settings .inline-drawer-toggle b,
+#extensions_settings .inline-drawer-toggle span,
+#extensions_settings .inline-drawer-toggle {
+    text-shadow: none !important;
+}
