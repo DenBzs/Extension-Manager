@@ -1,26 +1,28 @@
 // ============================================================
-// ST Chat Tools - index.js
-// Feature 1: Delete last message button (trash icon)
-// Feature 2: Extension panel reorder + grouping
+// ST Chat Tools - index.js  v2.0
 // ============================================================
 
-const MODULE_NAME = 'chat_tools';
+const MODULE_NAME = 'Extension-Manager';
 
-// ── Helpers ──────────────────────────────────────────────────
-
-function getCtx() {
-    return SillyTavern.getContext();
-}
+function getCtx() { return SillyTavern.getContext(); }
 
 function getSettings() {
     const { extensionSettings } = getCtx();
     if (!extensionSettings[MODULE_NAME]) {
-        extensionSettings[MODULE_NAME] = {
-            extensionOrder: [],   // [{ id: 'ext-folder-name', group: 'Group Name' | null }]
-            groups: [],           // ['Group A', 'Group B', ...]
-        };
+        extensionSettings[MODULE_NAME] = { extensionOrder: [], groups: [] };
     }
-    return extensionSettings[MODULE_NAME];
+    const s = extensionSettings[MODULE_NAME];
+    if (!Array.isArray(s.extensionOrder)) s.extensionOrder = [];
+    if (!Array.isArray(s.groups)) s.groups = [];
+    return s;
+}
+
+function saveSettings() { getCtx().saveSettingsDebounced(); }
+
+function esc(str) {
+    return String(str)
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
 // ============================================================
@@ -29,421 +31,302 @@ function getSettings() {
 
 function deleteLastMessage() {
     const { chat, saveChat } = getCtx();
-
-    if (!chat || chat.length === 0) {
-        toastr.warning('삭제할 메시지가 없습니다.');
-        return;
-    }
-
-    // Remove the last message from the context array
+    if (!chat || chat.length === 0) { toastr.warning('삭제할 메시지가 없습니다.'); return; }
     chat.pop();
-
-    // Remove the last rendered message element from the DOM
-    const messages = document.querySelectorAll('#chat .mes');
-    if (messages.length > 0) {
-        messages[messages.length - 1].remove();
-    }
-
-    // Persist
+    const msgs = document.querySelectorAll('#chat .mes');
+    if (msgs.length > 0) msgs[msgs.length - 1].remove();
     saveChat();
     toastr.success('마지막 메시지가 삭제되었습니다.');
 }
 
 function injectDeleteButton() {
-    // Don't inject twice
     if (document.getElementById('ct_delete_last_btn')) return;
-
-    // Target: right before the send button
     const sendBtn = document.getElementById('send_but');
     if (!sendBtn) return;
-
     const btn = document.createElement('div');
     btn.id = 'ct_delete_last_btn';
     btn.title = '마지막 메시지 삭제';
-    btn.classList.add('ct-icon-btn');
     btn.innerHTML = '<i class="fa-solid fa-trash-can"></i>';
     btn.addEventListener('click', deleteLastMessage);
-
     sendBtn.parentNode.insertBefore(btn, sendBtn);
 }
 
 // ============================================================
-// FEATURE 2 — Extension Panel: Groups & Order
+// FEATURE 2 — Extension Manager
 // ============================================================
 
-// Returns all extension .inline-drawer entries inside #extensions_settings
-function getExtensionEntries() {
+function readLiveExtensions() {
     const container = document.getElementById('extensions_settings');
     if (!container) return [];
-    return Array.from(container.querySelectorAll('.inline-drawer'));
+    return Array.from(container.querySelectorAll(':scope > .inline-drawer'))
+        .map(el => {
+            const b = el.querySelector('.inline-drawer-toggle b');
+            return b ? b.textContent.trim() : '';
+        })
+        .filter(Boolean);
 }
 
-// Read display names from rendered extension blocks
-// Each .inline-drawer has a .inline-drawer-toggle button with a <b> tag containing the name
-function readExtensionIds() {
-    return getExtensionEntries().map(el => {
-        const nameEl = el.querySelector('.inline-drawer-toggle b, b');
-        return nameEl ? nameEl.textContent.trim() : '';
-    }).filter(Boolean);
+// ── Panel ────────────────────────────────────────────────────
+
+let ctPanelOpen = false;
+
+function closePanel() {
+    document.querySelectorAll('.ct-backdrop').forEach(el => el.remove());
+    const p = document.getElementById('ct_ext_manager');
+    if (p) p.remove();
+    ctPanelOpen = false;
 }
 
-// ── Manager Panel ────────────────────────────────────────────
-
-let managerPanel = null;
-
-function closeManagerPanel() {
-    const backdrop = document.getElementById('ct_ext_manager_backdrop');
-    if (backdrop) backdrop.remove();
-    if (managerPanel) {
-        managerPanel.remove();
-        managerPanel = null;
-    }
-}
-
-function openExtensionManager() {
-    if (managerPanel) {
-        managerPanel.remove();
-        managerPanel = null;
-        return;
-    }
+function openPanel() {
+    if (ctPanelOpen) { closePanel(); return; }
 
     const settings = getSettings();
+    const liveIds = readLiveExtensions();
 
-    // Sync: add any newly-installed extensions not yet tracked
-    const liveIds = readExtensionIds();
     liveIds.forEach(id => {
-        if (id && !settings.extensionOrder.find(e => e.id === id)) {
+        if (!settings.extensionOrder.find(e => e.id === id)) {
             settings.extensionOrder.push({ id, group: null });
         }
     });
-    // Remove stale entries
     settings.extensionOrder = settings.extensionOrder.filter(e => liveIds.includes(e.id));
 
-    renderManagerPanel();
+    renderPanel();
+    ctPanelOpen = true;
 }
 
-function renderManagerPanel() {
-    if (managerPanel) managerPanel.remove();
+function renderPanel() {
+    // Clean up — remove ALL backdrops and panel
+    document.querySelectorAll('.ct-backdrop').forEach(el => el.remove());
+    const oldPanel = document.getElementById('ct_ext_manager');
+    if (oldPanel) oldPanel.remove();
 
     const settings = getSettings();
 
+    // Single backdrop
+    const bd = document.createElement('div');
+    bd.className = 'ct-backdrop';
+    bd.addEventListener('click', closePanel);
+    document.documentElement.appendChild(bd);
+
+    // Panel element
     const panel = document.createElement('div');
     panel.id = 'ct_ext_manager';
-    panel.classList.add('ct-manager-panel');
 
-    // ── Header ──
+    // Header
     const header = document.createElement('div');
-    header.classList.add('ct-manager-header');
+    header.className = 'ct-header';
     header.innerHTML = `
-        <span><i class="fa-solid fa-layer-group"></i> Extension 관리자</span>
-        <div class="ct-manager-header-actions">
-            <button id="ct_add_group_btn" class="ct-btn ct-btn-sm" title="새 그룹 추가">
-                <i class="fa-solid fa-folder-plus"></i> 그룹 추가
-            </button>
-            <button id="ct_apply_btn" class="ct-btn ct-btn-primary ct-btn-sm" title="순서 적용">
-                <i class="fa-solid fa-check"></i> 적용
-            </button>
-            <button id="ct_close_manager_btn" class="ct-btn ct-btn-sm">
-                <i class="fa-solid fa-xmark"></i>
-            </button>
+        <span class="ct-title"><i class="fa-solid fa-layer-group"></i> Extension 관리자</span>
+        <div class="ct-header-btns">
+            <button class="ct-btn ct-btn-sm" id="ct_add_group_btn"><i class="fa-solid fa-folder-plus"></i> 그룹 추가</button>
+            <button class="ct-btn ct-btn-primary ct-btn-sm" id="ct_apply_btn"><i class="fa-solid fa-check"></i> 적용</button>
+            <button class="ct-btn ct-btn-sm" id="ct_close_btn"><i class="fa-solid fa-xmark"></i></button>
         </div>`;
     panel.appendChild(header);
 
-    // ── Group management area ──
-    const groupArea = document.createElement('div');
-    groupArea.id = 'ct_group_area';
-    groupArea.classList.add('ct-group-area');
-    groupArea.innerHTML = `<div class="ct-section-label">그룹 목록</div>`;
+    // Scrollable body
+    const body = document.createElement('div');
+    body.className = 'ct-body';
+
+    // ── Group list ──
+    const groupSec = document.createElement('div');
+    groupSec.innerHTML = `<div class="ct-section-label">그룹 <span class="ct-hint">— 그룹에 속한 확장은 접어서 숨길 수 있어요</span></div>`;
 
     if (settings.groups.length === 0) {
-        const empty = document.createElement('div');
-        empty.classList.add('ct-empty-hint');
-        empty.textContent = '그룹이 없습니다. 위 버튼으로 추가하세요.';
-        groupArea.appendChild(empty);
+        groupSec.insertAdjacentHTML('beforeend', '<div class="ct-empty">그룹 없음. 위 버튼으로 추가하세요.</div>');
     } else {
         settings.groups.forEach((grp, gi) => {
             const row = document.createElement('div');
-            row.classList.add('ct-group-row');
-            row.dataset.group = grp;
+            row.className = 'ct-group-row';
             row.innerHTML = `
-                <i class="fa-solid fa-folder ct-group-icon"></i>
-                <span class="ct-group-name">${escapeHtml(grp)}</span>
-                <button class="ct-btn ct-btn-danger ct-btn-xs ct-delete-group-btn" data-index="${gi}" title="그룹 삭제">
+                <i class="fa-solid fa-folder ct-folder-icon"></i>
+                <span>${esc(grp.name)}</span>
+                <div class="ct-spacer"></div>
+                <button class="ct-btn ct-btn-xs ct-btn-danger ct-del-group" data-gi="${gi}">
                     <i class="fa-solid fa-trash-can"></i>
                 </button>`;
-            groupArea.appendChild(row);
+            groupSec.appendChild(row);
         });
     }
-    panel.appendChild(groupArea);
+    body.appendChild(groupSec);
 
     // ── Extension list ──
-    const listArea = document.createElement('div');
-    listArea.id = 'ct_ext_list_area';
-    listArea.classList.add('ct-ext-list-area');
-    listArea.innerHTML = `<div class="ct-section-label">Extension 순서 및 그룹 배정</div>`;
+    const extSec = document.createElement('div');
+    extSec.innerHTML = `<div class="ct-section-label" style="margin-top:12px">확장 순서 &amp; 그룹 배정</div>`;
 
     settings.extensionOrder.forEach((entry, idx) => {
-        const row = buildExtensionRow(entry, idx, settings);
-        listArea.appendChild(row);
+        const groupOptions = `<option value="">— 없음 —</option>` +
+            settings.groups.map(g =>
+                `<option value="${esc(g.name)}" ${entry.group === g.name ? 'selected' : ''}>${esc(g.name)}</option>`
+            ).join('');
+
+        const row = document.createElement('div');
+        row.className = 'ct-ext-row' + (entry.group ? ' ct-ext-grouped' : '');
+        row.innerHTML = `
+            <i class="fa-solid fa-puzzle-piece ct-dim"></i>
+            <span class="ct-ext-name">${esc(entry.id)}</span>
+            ${entry.group ? `<span class="ct-badge">${esc(entry.group)}</span>` : ''}
+            <div class="ct-spacer"></div>
+            <select class="ct-select ct-grp-sel" data-idx="${idx}">${groupOptions}</select>
+            <button class="ct-btn ct-btn-xs ct-up" data-idx="${idx}" ${idx === 0 ? 'disabled' : ''}><i class="fa-solid fa-arrow-up"></i></button>
+            <button class="ct-btn ct-btn-xs ct-down" data-idx="${idx}" ${idx === settings.extensionOrder.length - 1 ? 'disabled' : ''}><i class="fa-solid fa-arrow-down"></i></button>`;
+        extSec.appendChild(row);
     });
 
-    panel.appendChild(listArea);
-
-    // ── Backdrop (closes panel on tap outside) ──
-    const backdrop = document.createElement('div');
-    backdrop.id = 'ct_ext_manager_backdrop';
-    backdrop.addEventListener('click', closeManagerPanel);
-    document.body.appendChild(backdrop);
-
-    document.body.appendChild(panel);
-    managerPanel = panel;
+    body.appendChild(extSec);
+    panel.appendChild(body);
+    document.documentElement.appendChild(panel);
 
     // ── Events ──
-    panel.querySelector('#ct_close_manager_btn').addEventListener('click', closeManagerPanel);
+    panel.querySelector('#ct_close_btn').addEventListener('click', closePanel);
 
-    panel.querySelector('#ct_add_group_btn').addEventListener('click', promptAddGroup);
-
-    panel.querySelector('#ct_apply_btn').addEventListener('click', applyOrder);
-
-    panel.querySelectorAll('.ct-delete-group-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const idx = parseInt(e.currentTarget.dataset.index);
-            deleteGroup(idx);
-        });
+    panel.querySelector('#ct_add_group_btn').addEventListener('click', () => {
+        const name = prompt('새 그룹 이름:');
+        if (!name || !name.trim()) return;
+        const trimmed = name.trim();
+        if (settings.groups.find(g => g.name === trimmed)) { toastr.warning('이미 있는 이름입니다.'); return; }
+        settings.groups.push({ name: trimmed, collapsed: false });
+        saveSettings();
+        renderPanel();
     });
 
-    panel.querySelectorAll('.ct-move-up-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const idx = parseInt(e.currentTarget.dataset.index);
-            moveEntry(idx, -1);
-        });
-    });
+    panel.querySelector('#ct_apply_btn').addEventListener('click', applyToDOM);
 
-    panel.querySelectorAll('.ct-move-down-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const idx = parseInt(e.currentTarget.dataset.index);
-            moveEntry(idx, 1);
-        });
-    });
+    panel.querySelectorAll('.ct-del-group').forEach(btn => btn.addEventListener('click', e => {
+        const gi = parseInt(e.currentTarget.dataset.gi);
+        const name = settings.groups[gi].name;
+        settings.extensionOrder.forEach(e => { if (e.group === name) e.group = null; });
+        settings.groups.splice(gi, 1);
+        saveSettings();
+        renderPanel();
+    }));
 
-    panel.querySelectorAll('.ct-group-select').forEach(sel => {
-        sel.addEventListener('change', (e) => {
-            const idx = parseInt(e.currentTarget.dataset.index);
-            settings.extensionOrder[idx].group = e.currentTarget.value || null;
-        });
-    });
+    panel.querySelectorAll('.ct-up').forEach(btn => btn.addEventListener('click', e => {
+        const i = parseInt(e.currentTarget.dataset.idx);
+        if (i === 0) return;
+        [settings.extensionOrder[i - 1], settings.extensionOrder[i]] = [settings.extensionOrder[i], settings.extensionOrder[i - 1]];
+        saveSettings(); renderPanel();
+    }));
+
+    panel.querySelectorAll('.ct-down').forEach(btn => btn.addEventListener('click', e => {
+        const i = parseInt(e.currentTarget.dataset.idx);
+        if (i >= settings.extensionOrder.length - 1) return;
+        [settings.extensionOrder[i], settings.extensionOrder[i + 1]] = [settings.extensionOrder[i + 1], settings.extensionOrder[i]];
+        saveSettings(); renderPanel();
+    }));
+
+    panel.querySelectorAll('.ct-grp-sel').forEach(sel => sel.addEventListener('change', e => {
+        const i = parseInt(e.currentTarget.dataset.idx);
+        settings.extensionOrder[i].group = e.currentTarget.value || null;
+        saveSettings(); renderPanel();
+    }));
 }
 
-function buildExtensionRow(entry, idx, settings) {
-    const row = document.createElement('div');
-    row.classList.add('ct-ext-row');
-    if (entry.group) row.classList.add('ct-ext-grouped');
+// ── Apply order + group collapse to ST DOM ───────────────────
 
-    // Group colour badge
-    const groupBadge = entry.group
-        ? `<span class="ct-group-badge">${escapeHtml(entry.group)}</span>`
-        : '';
-
-    // Build group <select>
-    const groupOptions = `<option value="">— 그룹 없음 —</option>` +
-        settings.groups.map(g =>
-            `<option value="${escapeHtml(g)}" ${entry.group === g ? 'selected' : ''}>${escapeHtml(g)}</option>`
-        ).join('');
-
-    row.innerHTML = `
-        <div class="ct-ext-row-main">
-            <div class="ct-ext-info">
-                <i class="fa-solid fa-puzzle-piece ct-ext-icon"></i>
-                <span class="ct-ext-name">${escapeHtml(entry.id)}</span>
-                ${groupBadge}
-            </div>
-            <div class="ct-ext-controls">
-                <select class="ct-group-select ct-select" data-index="${idx}" title="그룹 배정">
-                    ${groupOptions}
-                </select>
-                <button class="ct-btn ct-btn-xs ct-move-up-btn" data-index="${idx}" title="위로" ${idx === 0 ? 'disabled' : ''}>
-                    <i class="fa-solid fa-arrow-up"></i>
-                </button>
-                <button class="ct-btn ct-btn-xs ct-move-down-btn" data-index="${idx}" title="아래로"
-                    ${idx === settings.extensionOrder.length - 1 ? 'disabled' : ''}>
-                    <i class="fa-solid fa-arrow-down"></i>
-                </button>
-            </div>
-        </div>`;
-
-    return row;
-}
-
-function promptAddGroup() {
+function applyToDOM() {
     const settings = getSettings();
-    const name = prompt('새 그룹 이름을 입력하세요:');
-    if (!name || !name.trim()) return;
-    const trimmed = name.trim();
-    if (settings.groups.includes(trimmed)) {
-        toastr.warning('이미 존재하는 그룹 이름입니다.');
-        return;
-    }
-    settings.groups.push(trimmed);
-    saveSettings();
-    renderManagerPanel();
-}
-
-function deleteGroup(index) {
-    const settings = getSettings();
-    const groupName = settings.groups[index];
-    // Unassign from all extensions
-    settings.extensionOrder.forEach(e => {
-        if (e.group === groupName) e.group = null;
-    });
-    settings.groups.splice(index, 1);
-    saveSettings();
-    renderManagerPanel();
-}
-
-function moveEntry(idx, direction) {
-    const settings = getSettings();
-    const order = settings.extensionOrder;
-    const newIdx = idx + direction;
-    if (newIdx < 0 || newIdx >= order.length) return;
-    [order[idx], order[newIdx]] = [order[newIdx], order[idx]];
-    saveSettings();
-    renderManagerPanel();
-}
-
-// Apply order to the actual Extensions panel DOM
-function applyOrder() {
-    const settings = getSettings();
-    // ST renders extension items directly inside #extensions_settings
-    // as .inline-drawer elements (each one is one extension)
     const container = document.getElementById('extensions_settings');
     if (!container) {
-        toastr.error('Extensions 패널을 찾을 수 없습니다. Extensions 탭을 먼저 열고 다시 시도하세요.');
+        toastr.error('확장 패널을 찾을 수 없습니다. 확장 탭을 열고 다시 시도하세요.');
         return;
     }
 
-    // Build a map: name → element
-    // Each extension is an .inline-drawer; its toggle button contains the name in a <b> tag
-    const allBlocks = Array.from(container.querySelectorAll('.inline-drawer'));
+    // Map name → element
     const nameToEl = {};
-    allBlocks.forEach(el => {
-        const nameEl = el.querySelector('.extension_name, .inline-drawer-toggle b, b');
-        const name = nameEl ? nameEl.textContent.trim() : '';
-        if (name) nameToEl[name] = el;
+    container.querySelectorAll(':scope > .inline-drawer').forEach(el => {
+        const b = el.querySelector('.inline-drawer-toggle b');
+        if (b) nameToEl[b.textContent.trim()] = el;
     });
 
-    // Group headers map
-    const groupHeaders = {};
-
-    // Remove existing group header elements we injected
+    // Remove previously injected group headers
     container.querySelectorAll('.ct-group-header').forEach(el => el.remove());
 
-    // Re-append in desired order
-    let currentGroup = null;
+    const injectedGroups = new Set();
+    let lastGroup = null;
+
     settings.extensionOrder.forEach(entry => {
         const el = nameToEl[entry.id];
         if (!el) return;
 
-        if (entry.group !== currentGroup) {
-            currentGroup = entry.group;
-            if (currentGroup) {
-                if (!groupHeaders[currentGroup]) {
-                    const hdr = document.createElement('div');
-                    hdr.classList.add('ct-group-header');
-                    hdr.innerHTML = `<i class="fa-solid fa-folder-open"></i> ${escapeHtml(currentGroup)}`;
-                    groupHeaders[currentGroup] = hdr;
-                }
-                container.appendChild(groupHeaders[currentGroup]);
-            }
+        // Inject group header once per group
+        if (entry.group && entry.group !== lastGroup && !injectedGroups.has(entry.group)) {
+            const grpData = settings.groups.find(g => g.name === entry.group);
+            const collapsed = grpData ? grpData.collapsed : false;
+
+            const hdr = document.createElement('div');
+            hdr.className = 'ct-group-header';
+            hdr.dataset.group = entry.group;
+            hdr.innerHTML = `
+                <i class="fa-solid ${collapsed ? 'fa-folder' : 'fa-folder-open'}"></i>
+                <span>${esc(entry.group)}</span>
+                <span class="ct-collapse-hint">${collapsed ? '▶ 펼치기' : '▼ 접기'}</span>`;
+            hdr.addEventListener('click', () => toggleCollapse(entry.group));
+            container.appendChild(hdr);
+            injectedGroups.add(entry.group);
         }
+
+        lastGroup = entry.group || null;
+
+        // Hide/show based on collapse
+        if (entry.group) {
+            const grpData = settings.groups.find(g => g.name === entry.group);
+            el.style.display = (grpData && grpData.collapsed) ? 'none' : '';
+        } else {
+            el.style.display = '';
+        }
+
         container.appendChild(el);
     });
 
-    // Append any untracked extensions at the bottom
-    allBlocks.forEach(el => {
-        if (!el.parentNode || el.parentNode !== container) return; // already moved
-        // check if tracked
-        const nameEl = el.querySelector('.extension_name, .inline-drawer-toggle b, b');
-        const name = nameEl ? nameEl.textContent.trim() : '';
+    // Untracked extensions go to bottom, always visible
+    Object.entries(nameToEl).forEach(([name, el]) => {
         if (!settings.extensionOrder.find(e => e.id === name)) {
+            el.style.display = '';
             container.appendChild(el);
         }
     });
 
     saveSettings();
-    toastr.success('Extension 순서가 적용되었습니다!');
+    toastr.success('적용 완료!');
 }
 
-// ── Inject manager button into Extensions panel header ────────
-// Real ST DOM (confirmed from screenshot):
-//   #extensions_settings
-//     div.extensions_block (top button row)
-//       button#extensions_update  ← "확장 프로그램 업데이트 알림"
-//       button#extensions_open_manager ← "확장 프로그램 관리"
-//     button#extensions_install  ← "확장 프로그램 설치"
-//     ... inline-drawer extension items ...
+function toggleCollapse(groupName) {
+    const settings = getSettings();
+    const grp = settings.groups.find(g => g.name === groupName);
+    if (!grp) return;
+    grp.collapsed = !grp.collapsed;
+    saveSettings();
+    applyToDOM();
+}
+
+// ── Inject manager open-button ────────────────────────────────
 
 function injectManagerButton() {
     if (document.getElementById('ct_ext_manager_btn')) return;
-
     const btn = document.createElement('button');
     btn.id = 'ct_ext_manager_btn';
-    btn.classList.add('ct-btn', 'ct-ext-manager-open-btn');
-    btn.title = 'Extension 관리자 열기';
+    btn.className = 'ct-manager-open-btn';
     btn.innerHTML = '<i class="fa-solid fa-sliders"></i> 순서/그룹 관리';
-    btn.addEventListener('click', openExtensionManager);
+    btn.addEventListener('click', openPanel);
 
-    // Strategy 1: insert right after the "확장 프로그램 설치" button row
     const installBtn = document.getElementById('extensions_install');
-    if (installBtn) {
-        installBtn.insertAdjacentElement('afterend', btn);
-        return;
-    }
-
-    // Strategy 2: insert into the top button block
-    const topBlock = document.querySelector('#extensions_settings .extensions_block, #extensions_settings > div:first-child');
-    if (topBlock) {
-        topBlock.appendChild(btn);
-        return;
-    }
-
-    // Strategy 3: prepend to the whole extensions settings panel
+    if (installBtn) { installBtn.insertAdjacentElement('afterend', btn); return; }
+    const topBlock = document.querySelector('#extensions_settings .extensions_block');
+    if (topBlock) { topBlock.appendChild(btn); return; }
     const panel = document.getElementById('extensions_settings');
-    if (panel) {
-        panel.insertAdjacentElement('afterbegin', btn);
-        return;
-    }
-
-    // Strategy 4: watch for the panel to appear (user hasn't opened the tab yet)
-    console.log('[Chat Tools] Extensions panel not found yet — will retry on tab open');
+    if (panel) { panel.insertAdjacentElement('afterbegin', btn); return; }
 }
 
-// Watch for the extensions tab being opened for the first time
-function watchExtensionTabOpen() {
-    // ST renders #extensions_settings lazily when the tab is first clicked
-    const observer = new MutationObserver(() => {
-        if (document.getElementById('extensions_install') || document.getElementById('extensions_settings')) {
-            observer.disconnect();
-            setTimeout(injectManagerButton, 100); // slight delay for full render
+function watchForExtensionsPanel() {
+    if (document.getElementById('ct_ext_manager_btn')) return;
+    const obs = new MutationObserver(() => {
+        if (document.getElementById('extensions_settings') || document.getElementById('extensions_install')) {
+            obs.disconnect();
+            setTimeout(injectManagerButton, 150);
         }
     });
-    observer.observe(document.body, { childList: true, subtree: true });
-}
-
-// ── Save ─────────────────────────────────────────────────────
-
-function saveSettings() {
-    const { saveSettingsDebounced } = getCtx();
-    saveSettingsDebounced();
-}
-
-// ── Utility ──────────────────────────────────────────────────
-
-function escapeHtml(str) {
-    return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;');
+    obs.observe(document.body, { childList: true, subtree: true });
 }
 
 // ============================================================
@@ -453,28 +336,21 @@ function escapeHtml(str) {
 (function init() {
     const { eventSource, event_types } = getCtx();
 
-    // Wait for app to be fully ready
     eventSource.on(event_types.APP_READY, () => {
         injectDeleteButton();
-        // Try injecting manager button; if panel not open yet, watch for it
         injectManagerButton();
-        watchExtensionTabOpen();
+        watchForExtensionsPanel();
     });
 
-    // Also try immediately in case APP_READY already fired
-    if (document.getElementById('send_but')) {
-        injectDeleteButton();
-    }
+    if (document.getElementById('send_but')) injectDeleteButton();
+
     if (document.getElementById('extensions_settings') || document.getElementById('extensions_install')) {
         injectManagerButton();
     } else {
-        watchExtensionTabOpen();
+        watchForExtensionsPanel();
     }
 
-    // Re-inject on chat change (the send button sometimes re-renders)
-    eventSource.on(event_types.CHAT_CHANGED, () => {
-        injectDeleteButton();
-    });
+    eventSource.on(event_types.CHAT_CHANGED, () => injectDeleteButton());
 
-    console.log('[Chat Tools] Extension loaded ✓');
+    console.log('[Chat Tools] v2.0 loaded');
 })();
