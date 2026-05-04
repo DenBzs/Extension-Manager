@@ -142,11 +142,15 @@
 .ct-group-header-injected i { color: #b08020; }
 .ct-collapse-hint { margin-left: auto; font-size: 10px; color: #b08a20; font-weight: 400; }
 
-/* ── Kill ST's text-shadow on extension names ────────────── */
+/* ── Kill ST's text-shadow / blur on ALL extension names ─── */
+#extensions_settings *,
+#extensions_settings .inline-drawer-toggle,
 #extensions_settings .inline-drawer-toggle b,
 #extensions_settings .inline-drawer-toggle span,
-#extensions_settings .inline-drawer-toggle,
-.inline-drawer-toggle b {
+#extensions_settings .inline-drawer-toggle i,
+#extensions_settings .inline-drawer-content,
+#extensions_settings b {
     text-shadow: none !important;
     filter: none !important;
+    -webkit-filter: none !important;
 }
