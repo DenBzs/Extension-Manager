@@ -4,7 +4,7 @@
 // Feature 2: Extension panel reorder + grouping
 // ============================================================
 
-const MODULE_NAME = 'chat_tools';
+const MODULE_NAME = 'Extension-Manager';
 
 // ── Helpers ──────────────────────────────────────────────────
 
@@ -90,6 +90,15 @@ function readExtensionIds() {
 // ── Manager Panel ────────────────────────────────────────────
 
 let managerPanel = null;
+
+function closeManagerPanel() {
+    const backdrop = document.getElementById('ct_ext_manager_backdrop');
+    if (backdrop) backdrop.remove();
+    if (managerPanel) {
+        managerPanel.remove();
+        managerPanel = null;
+    }
+}
 
 function openExtensionManager() {
     if (managerPanel) {
@@ -180,18 +189,17 @@ function renderManagerPanel() {
 
     panel.appendChild(listArea);
 
-    // ── Close on outside click ──
-    document.addEventListener('mousedown', onOutsideClick);
+    // ── Backdrop (closes panel on tap outside) ──
+    const backdrop = document.createElement('div');
+    backdrop.id = 'ct_ext_manager_backdrop';
+    backdrop.addEventListener('click', closeManagerPanel);
+    document.body.appendChild(backdrop);
 
     document.body.appendChild(panel);
     managerPanel = panel;
 
     // ── Events ──
-    panel.querySelector('#ct_close_manager_btn').addEventListener('click', () => {
-        managerPanel.remove();
-        managerPanel = null;
-        document.removeEventListener('mousedown', onOutsideClick);
-    });
+    panel.querySelector('#ct_close_manager_btn').addEventListener('click', closeManagerPanel);
 
     panel.querySelector('#ct_add_group_btn').addEventListener('click', promptAddGroup);
 
@@ -266,14 +274,6 @@ function buildExtensionRow(entry, idx, settings) {
     return row;
 }
 
-function onOutsideClick(e) {
-    if (managerPanel && !managerPanel.contains(e.target)) {
-        const triggerBtn = document.getElementById('ct_ext_manager_btn');
-        if (triggerBtn && triggerBtn.contains(e.target)) return;
-        managerPanel.remove();
-        managerPanel = null;
-        document.removeEventListener('mousedown', onOutsideClick);
-    }
 }
 
 function promptAddGroup() {
