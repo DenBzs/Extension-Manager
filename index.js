@@ -1,6 +1,4 @@
-// ============================================================
-// ST Chat Tools - index.js  v2.0
-// ============================================================
+// ST Chat Tools - index.js v3.0
 
 const MODULE_NAME = 'chat_tools';
 
@@ -9,10 +7,10 @@ function getCtx() { return SillyTavern.getContext(); }
 function getSettings() {
     const { extensionSettings } = getCtx();
     if (!extensionSettings[MODULE_NAME]) {
-        extensionSettings[MODULE_NAME] = { extensionOrder: [], groups: [] };
+        extensionSettings[MODULE_NAME] = { order: [], groups: [] };
     }
     const s = extensionSettings[MODULE_NAME];
-    if (!Array.isArray(s.extensionOrder)) s.extensionOrder = [];
+    if (!Array.isArray(s.order)) s.order = [];
     if (!Array.isArray(s.groups)) s.groups = [];
     return s;
 }
@@ -26,7 +24,7 @@ function esc(str) {
 }
 
 // ============================================================
-// FEATURE 1 — Delete Last Message Button
+// FEATURE 1 — Delete Last Message
 // ============================================================
 
 function deleteLastMessage() {
@@ -55,281 +53,304 @@ function injectDeleteButton() {
 // FEATURE 2 — Extension Manager
 // ============================================================
 
-function readLiveExtensions() {
-    const container = document.getElementById('extensions_settings');
-    if (!container) return [];
-    // Grab every .inline-drawer that is NOT nested inside another .inline-drawer
-    // (i.e. its closest .inline-drawer ancestor is itself)
-    return Array.from(container.querySelectorAll('.inline-drawer'))
-        .filter(el => el.parentElement.closest('.inline-drawer') === null)
-        .map(el => {
-            // The name <b> tag is inside .inline-drawer-toggle (anywhere inside)
-            const b = el.querySelector('.inline-drawer-toggle b');
-            return b ? b.textContent.trim() : '';
-        })
-        .filter(Boolean);
+// Scan ALL .inline-drawer in the whole document that are
+// extension entries: they must contain an .inline-drawer-toggle
+// with a <b> tag, and must NOT be nested inside another .inline-drawer
+function scanExtensions() {
+    const results = [];
+    document.querySelectorAll('.inline-drawer').forEach(el => {
+        // Skip if nested inside another inline-drawer
+        if (el.parentElement && el.parentElement.closest('.inline-drawer')) return;
+        // Must have a toggle with a <b> name tag
+        const toggle = el.querySelector('.inline-drawer-toggle');
+        if (!toggle) return;
+        const b = toggle.querySelector('b');
+        if (!b) return;
+        const name = b.textContent.trim();
+        if (name) results.push({ name, el });
+    });
+    return results;
 }
 
 // ── Panel ────────────────────────────────────────────────────
 
-let ctPanelOpen = false;
+let ctOpen = false;
 
 function closePanel() {
-    document.querySelectorAll('.ct-backdrop').forEach(el => el.remove());
+    document.querySelectorAll('.ct-backdrop').forEach(e => e.remove());
     const p = document.getElementById('ct_ext_manager');
     if (p) p.remove();
-    ctPanelOpen = false;
+    ctOpen = false;
 }
 
 function openPanel() {
-    if (ctPanelOpen) { closePanel(); return; }
+    if (ctOpen) { closePanel(); return; }
 
     const settings = getSettings();
-    const liveIds = readLiveExtensions();
+    const live = scanExtensions();
 
-    liveIds.forEach(id => {
-        if (!settings.extensionOrder.find(e => e.id === id)) {
-            settings.extensionOrder.push({ id, group: null });
+    // Sync: add new extensions not yet tracked
+    live.forEach(({ name }) => {
+        if (!settings.order.find(e => e.id === name)) {
+            settings.order.push({ type: 'ext', id: name, group: null });
         }
     });
-    settings.extensionOrder = settings.extensionOrder.filter(e => liveIds.includes(e.id));
+    // Remove stale
+    const liveNames = live.map(x => x.name);
+    settings.order = settings.order.filter(e => e.type === 'group' || liveNames.includes(e.id));
 
     renderPanel();
-    ctPanelOpen = true;
+    ctOpen = true;
 }
 
+// order array contains two kinds of entries:
+//   { type: 'ext',   id: 'Extension Name', group: null }
+//   { type: 'group', id: 'Group Name', collapsed: false }
+// Groups appear inline in the order array as separators
+
 function renderPanel() {
-    // Clean up — remove ALL backdrops and panel
-    document.querySelectorAll('.ct-backdrop').forEach(el => el.remove());
-    const oldPanel = document.getElementById('ct_ext_manager');
-    if (oldPanel) oldPanel.remove();
+    document.querySelectorAll('.ct-backdrop').forEach(e => e.remove());
+    const old = document.getElementById('ct_ext_manager');
+    if (old) old.remove();
 
     const settings = getSettings();
 
-    // Single backdrop
+    // Backdrop
     const bd = document.createElement('div');
     bd.className = 'ct-backdrop';
     bd.addEventListener('click', closePanel);
     document.documentElement.appendChild(bd);
 
-    // Panel element
+    // Panel
     const panel = document.createElement('div');
     panel.id = 'ct_ext_manager';
 
     // Header
-    const header = document.createElement('div');
-    header.className = 'ct-header';
-    header.innerHTML = `
-        <span class="ct-title"><i class="fa-solid fa-layer-group"></i> Extension 관리자</span>
-        <div class="ct-header-btns">
-            <button class="ct-btn ct-btn-sm" id="ct_add_group_btn"><i class="fa-solid fa-folder-plus"></i> 그룹 추가</button>
-            <button class="ct-btn ct-btn-primary ct-btn-sm" id="ct_apply_btn"><i class="fa-solid fa-check"></i> 적용</button>
-            <button class="ct-btn ct-btn-sm" id="ct_close_btn"><i class="fa-solid fa-xmark"></i></button>
+    panel.innerHTML = `
+        <div class="ct-header">
+            <span class="ct-title"><i class="fa-solid fa-layer-group"></i> Extension 관리자</span>
+            <div class="ct-hbtns">
+                <button class="ct-btn ct-sm" id="ct_add_group"><i class="fa-solid fa-folder-plus"></i> 그룹 추가</button>
+                <button class="ct-btn ct-primary ct-sm" id="ct_apply"><i class="fa-solid fa-check"></i> 적용</button>
+                <button class="ct-btn ct-sm" id="ct_close"><i class="fa-solid fa-xmark"></i></button>
+            </div>
         </div>`;
-    panel.appendChild(header);
 
-    // Scrollable body
     const body = document.createElement('div');
     body.className = 'ct-body';
 
-    // ── Group list ──
-    const groupSec = document.createElement('div');
-    groupSec.innerHTML = `<div class="ct-section-label">그룹 <span class="ct-hint">— 그룹에 속한 확장은 접어서 숨길 수 있어요</span></div>`;
+    // Debug info
+    const live = scanExtensions();
+    const debugEl = document.createElement('div');
+    debugEl.className = 'ct-debug';
+    debugEl.textContent = `감지된 확장: ${live.length}개 | 저장된 항목: ${settings.order.filter(e=>e.type!=='group').length}개`;
+    body.appendChild(debugEl);
 
-    if (settings.groups.length === 0) {
-        groupSec.insertAdjacentHTML('beforeend', '<div class="ct-empty">그룹 없음. 위 버튼으로 추가하세요.</div>');
-    } else {
-        settings.groups.forEach((grp, gi) => {
-            const row = document.createElement('div');
-            row.className = 'ct-group-row';
-            row.innerHTML = `
-                <i class="fa-solid fa-folder ct-folder-icon"></i>
-                <span>${esc(grp.name)}</span>
-                <div class="ct-spacer"></div>
-                <button class="ct-btn ct-btn-xs ct-btn-danger ct-del-group" data-gi="${gi}">
-                    <i class="fa-solid fa-trash-can"></i>
-                </button>`;
-            groupSec.appendChild(row);
-        });
-    }
-    body.appendChild(groupSec);
+    // Unified order list (groups + extensions interleaved)
+    const listLabel = document.createElement('div');
+    listLabel.className = 'ct-label';
+    listLabel.textContent = '순서 (그룹은 폴더, 확장은 퍼즐 아이콘)';
+    body.appendChild(listLabel);
 
-    // ── Extension list ──
-    const extSec = document.createElement('div');
-    extSec.innerHTML = `<div class="ct-section-label" style="margin-top:12px">확장 순서 &amp; 그룹 배정</div>`;
+    const list = document.createElement('div');
+    list.id = 'ct_order_list';
 
-    settings.extensionOrder.forEach((entry, idx) => {
-        const groupOptions = `<option value="">— 없음 —</option>` +
-            settings.groups.map(g =>
-                `<option value="${esc(g.name)}" ${entry.group === g.name ? 'selected' : ''}>${esc(g.name)}</option>`
-            ).join('');
-
+    settings.order.forEach((entry, idx) => {
         const row = document.createElement('div');
-        row.className = 'ct-ext-row' + (entry.group ? ' ct-ext-grouped' : '');
-        row.innerHTML = `
-            <i class="fa-solid fa-puzzle-piece ct-dim"></i>
-            <span class="ct-ext-name">${esc(entry.id)}</span>
-            ${entry.group ? `<span class="ct-badge">${esc(entry.group)}</span>` : ''}
-            <div class="ct-spacer"></div>
-            <select class="ct-select ct-grp-sel" data-idx="${idx}">${groupOptions}</select>
-            <button class="ct-btn ct-btn-xs ct-up" data-idx="${idx}" ${idx === 0 ? 'disabled' : ''}><i class="fa-solid fa-arrow-up"></i></button>
-            <button class="ct-btn ct-btn-xs ct-down" data-idx="${idx}" ${idx === settings.extensionOrder.length - 1 ? 'disabled' : ''}><i class="fa-solid fa-arrow-down"></i></button>`;
-        extSec.appendChild(row);
+        const isGroup = entry.type === 'group';
+        row.className = isGroup ? 'ct-row ct-group-row' : 'ct-row ct-ext-row' + (entry.group ? ' ct-grouped' : '');
+        row.dataset.idx = idx;
+
+        const isFirst = idx === 0;
+        const isLast = idx === settings.order.length - 1;
+
+        if (isGroup) {
+            row.innerHTML = `
+                <i class="fa-solid fa-folder ct-icon-folder"></i>
+                <span class="ct-name">${esc(entry.id)}</span>
+                <span class="ct-badge-group">${entry.collapsed ? '접힘' : '펼침'}</span>
+                <div class="ct-spacer"></div>
+                <button class="ct-btn ct-xs ct-toggle-collapse" data-idx="${idx}" title="접기/펼치기">
+                    <i class="fa-solid ${entry.collapsed ? 'fa-eye' : 'fa-eye-slash'}"></i>
+                </button>
+                <button class="ct-btn ct-xs ct-btn-danger ct-del-group" data-idx="${idx}">
+                    <i class="fa-solid fa-trash-can"></i>
+                </button>
+                <button class="ct-btn ct-xs ct-up" data-idx="${idx}" ${isFirst ? 'disabled' : ''}><i class="fa-solid fa-arrow-up"></i></button>
+                <button class="ct-btn ct-xs ct-down" data-idx="${idx}" ${isLast ? 'disabled' : ''}><i class="fa-solid fa-arrow-down"></i></button>`;
+        } else {
+            const groupOpts = `<option value="">없음</option>` +
+                settings.order.filter(e => e.type === 'group').map(g =>
+                    `<option value="${esc(g.id)}" ${entry.group === g.id ? 'selected' : ''}>${esc(g.id)}</option>`
+                ).join('');
+
+            row.innerHTML = `
+                <i class="fa-solid fa-puzzle-piece ct-icon-ext"></i>
+                <span class="ct-name">${esc(entry.id)}</span>
+                <div class="ct-spacer"></div>
+                <select class="ct-sel ct-grp-sel" data-idx="${idx}">${groupOpts}</select>
+                <button class="ct-btn ct-xs ct-up" data-idx="${idx}" ${isFirst ? 'disabled' : ''}><i class="fa-solid fa-arrow-up"></i></button>
+                <button class="ct-btn ct-xs ct-down" data-idx="${idx}" ${isLast ? 'disabled' : ''}><i class="fa-solid fa-arrow-down"></i></button>`;
+        }
+
+        list.appendChild(row);
     });
 
-    body.appendChild(extSec);
+    body.appendChild(list);
     panel.appendChild(body);
     document.documentElement.appendChild(panel);
 
     // ── Events ──
-    panel.querySelector('#ct_close_btn').addEventListener('click', closePanel);
 
-    panel.querySelector('#ct_add_group_btn').addEventListener('click', () => {
+    panel.querySelector('#ct_close').addEventListener('click', closePanel);
+
+    panel.querySelector('#ct_apply').addEventListener('click', applyToDOM);
+
+    panel.querySelector('#ct_add_group').addEventListener('click', () => {
         const name = prompt('새 그룹 이름:');
         if (!name || !name.trim()) return;
         const trimmed = name.trim();
-        if (settings.groups.find(g => g.name === trimmed)) { toastr.warning('이미 있는 이름입니다.'); return; }
-        settings.groups.push({ name: trimmed, collapsed: false });
+        if (settings.order.find(e => e.type === 'group' && e.id === trimmed)) {
+            toastr.warning('이미 있는 이름입니다.');
+            return;
+        }
+        // Insert group at end of order
+        settings.order.push({ type: 'group', id: trimmed, collapsed: false });
         saveSettings();
         renderPanel();
     });
 
-    panel.querySelector('#ct_apply_btn').addEventListener('click', applyToDOM);
-
-    panel.querySelectorAll('.ct-del-group').forEach(btn => btn.addEventListener('click', e => {
-        const gi = parseInt(e.currentTarget.dataset.gi);
-        const name = settings.groups[gi].name;
-        settings.extensionOrder.forEach(e => { if (e.group === name) e.group = null; });
-        settings.groups.splice(gi, 1);
-        saveSettings();
-        renderPanel();
-    }));
-
     panel.querySelectorAll('.ct-up').forEach(btn => btn.addEventListener('click', e => {
         const i = parseInt(e.currentTarget.dataset.idx);
         if (i === 0) return;
-        [settings.extensionOrder[i - 1], settings.extensionOrder[i]] = [settings.extensionOrder[i], settings.extensionOrder[i - 1]];
+        [settings.order[i - 1], settings.order[i]] = [settings.order[i], settings.order[i - 1]];
         saveSettings(); renderPanel();
     }));
 
     panel.querySelectorAll('.ct-down').forEach(btn => btn.addEventListener('click', e => {
         const i = parseInt(e.currentTarget.dataset.idx);
-        if (i >= settings.extensionOrder.length - 1) return;
-        [settings.extensionOrder[i], settings.extensionOrder[i + 1]] = [settings.extensionOrder[i + 1], settings.extensionOrder[i]];
+        if (i >= settings.order.length - 1) return;
+        [settings.order[i], settings.order[i + 1]] = [settings.order[i + 1], settings.order[i]];
         saveSettings(); renderPanel();
     }));
 
     panel.querySelectorAll('.ct-grp-sel').forEach(sel => sel.addEventListener('change', e => {
         const i = parseInt(e.currentTarget.dataset.idx);
-        settings.extensionOrder[i].group = e.currentTarget.value || null;
+        settings.order[i].group = e.currentTarget.value || null;
+        saveSettings(); renderPanel();
+    }));
+
+    panel.querySelectorAll('.ct-toggle-collapse').forEach(btn => btn.addEventListener('click', e => {
+        const i = parseInt(e.currentTarget.dataset.idx);
+        settings.order[i].collapsed = !settings.order[i].collapsed;
+        saveSettings(); renderPanel();
+        // Apply collapse silently (no toast)
+        applyToDOM(true);
+    }));
+
+    panel.querySelectorAll('.ct-del-group').forEach(btn => btn.addEventListener('click', e => {
+        const i = parseInt(e.currentTarget.dataset.idx);
+        const name = settings.order[i].id;
+        // Unassign extensions that belonged to this group
+        settings.order.forEach(entry => { if (entry.group === name) entry.group = null; });
+        settings.order.splice(i, 1);
         saveSettings(); renderPanel();
     }));
 }
 
-// ── Apply order + group collapse to ST DOM ───────────────────
+// ── Apply to ST DOM ──────────────────────────────────────────
 
-function applyToDOM() {
+function applyToDOM(silent = false) {
     const settings = getSettings();
-    const container = document.getElementById('extensions_settings');
-    if (!container) {
-        toastr.error('확장 패널을 찾을 수 없습니다. 확장 탭을 열고 다시 시도하세요.');
+
+    // Build name→element map from ALL scanned extensions
+    const live = scanExtensions();
+    const nameToEl = {};
+    live.forEach(({ name, el }) => { nameToEl[name] = el; });
+
+    // Find a stable anchor container: parent of the first extension element
+    // This is more reliable than #extensions_settings
+    const firstEl = live[0] && live[0].el;
+    if (!firstEl) {
+        if (!silent) toastr.error('확장 요소를 찾을 수 없습니다.');
         return;
     }
-
-    // Map name → element (handle both direct children and wrapped structures)
-    const nameToEl = {};
-    container.querySelectorAll('.inline-drawer').forEach(el => {
-        // Skip nested drawers (e.g. drawers inside extension settings)
-        if (el.closest('.inline-drawer-content')) return;
-        const b = el.querySelector('.inline-drawer-toggle b');
-        if (b) nameToEl[b.textContent.trim()] = el;
-    });
+    const container = firstEl.parentElement;
 
     // Remove previously injected group headers
-    container.querySelectorAll('.ct-group-header').forEach(el => el.remove());
+    container.querySelectorAll('.ct-group-header-injected').forEach(e => e.remove());
 
-    const injectedGroups = new Set();
-    let lastGroup = null;
+    // Re-order DOM and inject group headers
+    const seenGroups = new Set();
 
-    settings.extensionOrder.forEach(entry => {
-        const el = nameToEl[entry.id];
-        if (!el) return;
-
-        // Inject group header once per group
-        if (entry.group && entry.group !== lastGroup && !injectedGroups.has(entry.group)) {
-            const grpData = settings.groups.find(g => g.name === entry.group);
-            const collapsed = grpData ? grpData.collapsed : false;
-
-            const hdr = document.createElement('div');
-            hdr.className = 'ct-group-header';
-            hdr.dataset.group = entry.group;
-            hdr.innerHTML = `
-                <i class="fa-solid ${collapsed ? 'fa-folder' : 'fa-folder-open'}"></i>
-                <span>${esc(entry.group)}</span>
-                <span class="ct-collapse-hint">${collapsed ? '▶ 펼치기' : '▼ 접기'}</span>`;
-            hdr.addEventListener('click', () => toggleCollapse(entry.group));
-            container.appendChild(hdr);
-            injectedGroups.add(entry.group);
-        }
-
-        lastGroup = entry.group || null;
-
-        // Hide/show based on collapse
-        if (entry.group) {
-            const grpData = settings.groups.find(g => g.name === entry.group);
-            el.style.display = (grpData && grpData.collapsed) ? 'none' : '';
+    settings.order.forEach(entry => {
+        if (entry.type === 'group') {
+            // Inject a visual group header if not already done
+            if (!seenGroups.has(entry.id)) {
+                seenGroups.add(entry.id);
+                const hdr = document.createElement('div');
+                hdr.className = 'ct-group-header-injected';
+                hdr.dataset.group = entry.id;
+                hdr.innerHTML = `
+                    <i class="fa-solid ${entry.collapsed ? 'fa-folder' : 'fa-folder-open'}"></i>
+                    <span>${esc(entry.id)}</span>
+                    <span class="ct-collapse-hint">${entry.collapsed ? '▶ 펼치기' : '▼ 접기'}</span>`;
+                hdr.addEventListener('click', () => {
+                    const s = getSettings();
+                    const g = s.order.find(e => e.type === 'group' && e.id === entry.id);
+                    if (g) { g.collapsed = !g.collapsed; saveSettings(); applyToDOM(true); renderPanel(); }
+                });
+                container.appendChild(hdr);
+            }
         } else {
-            el.style.display = '';
-        }
+            // It's an extension entry
+            const el = nameToEl[entry.id];
+            if (!el) return;
 
-        container.appendChild(el);
+            // Find which group this ext belongs to by looking backwards in order
+            // (the nearest preceding group entry that matches entry.group)
+            if (entry.group) {
+                const grpEntry = settings.order.find(e => e.type === 'group' && e.id === entry.group);
+                el.style.display = (grpEntry && grpEntry.collapsed) ? 'none' : '';
+            } else {
+                el.style.display = '';
+            }
+            container.appendChild(el);
+        }
     });
 
-    // Untracked extensions go to bottom, always visible
-    Object.entries(nameToEl).forEach(([name, el]) => {
-        if (!settings.extensionOrder.find(e => e.id === name)) {
+    // Append untracked extensions at bottom (visible)
+    live.forEach(({ name, el }) => {
+        if (!settings.order.find(e => e.type === 'ext' && e.id === name)) {
             el.style.display = '';
             container.appendChild(el);
         }
     });
 
-    saveSettings();
-    toastr.success('적용 완료!');
+    if (!silent) toastr.success('적용 완료!');
 }
 
-function toggleCollapse(groupName) {
-    const settings = getSettings();
-    const grp = settings.groups.find(g => g.name === groupName);
-    if (!grp) return;
-    grp.collapsed = !grp.collapsed;
-    saveSettings();
-    applyToDOM();
-}
-
-// ── Inject manager open-button ────────────────────────────────
+// ── Inject open button ────────────────────────────────────────
 
 function injectManagerButton() {
     if (document.getElementById('ct_ext_manager_btn')) return;
     const btn = document.createElement('button');
     btn.id = 'ct_ext_manager_btn';
-    btn.className = 'ct-manager-open-btn';
     btn.innerHTML = '<i class="fa-solid fa-sliders"></i> 순서/그룹 관리';
     btn.addEventListener('click', openPanel);
 
     const installBtn = document.getElementById('extensions_install');
     if (installBtn) { installBtn.insertAdjacentElement('afterend', btn); return; }
-    const topBlock = document.querySelector('#extensions_settings .extensions_block');
-    if (topBlock) { topBlock.appendChild(btn); return; }
     const panel = document.getElementById('extensions_settings');
     if (panel) { panel.insertAdjacentElement('afterbegin', btn); return; }
 }
 
-function watchForExtensionsPanel() {
+function watchForExtPanel() {
     if (document.getElementById('ct_ext_manager_btn')) return;
     const obs = new MutationObserver(() => {
         if (document.getElementById('extensions_settings') || document.getElementById('extensions_install')) {
             obs.disconnect();
-            setTimeout(injectManagerButton, 150);
+            setTimeout(injectManagerButton, 200);
         }
     });
     obs.observe(document.body, { childList: true, subtree: true });
@@ -345,18 +366,16 @@ function watchForExtensionsPanel() {
     eventSource.on(event_types.APP_READY, () => {
         injectDeleteButton();
         injectManagerButton();
-        watchForExtensionsPanel();
+        watchForExtPanel();
     });
 
     if (document.getElementById('send_but')) injectDeleteButton();
-
     if (document.getElementById('extensions_settings') || document.getElementById('extensions_install')) {
         injectManagerButton();
     } else {
-        watchForExtensionsPanel();
+        watchForExtPanel();
     }
 
     eventSource.on(event_types.CHAT_CHANGED, () => injectDeleteButton());
-
-    console.log('[Chat Tools] v2.0 loaded');
+    console.log('[Chat Tools] v3.0 loaded');
 })();
