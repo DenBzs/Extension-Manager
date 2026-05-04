@@ -1,237 +1,152 @@
-/* ============================================================
-   ST Chat Tools — style.css  v2.1
-   Works on both light and dark ST themes
-   ============================================================ */
+/* ST Chat Tools — style.css v3.0 */
 
-/* ── Delete Button ───────────────────────────────────────── */
-
+/* ── Delete button ───────────────────────────────────────── */
 #ct_delete_last_btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 40px;
-    height: 40px;
-    cursor: pointer;
-    opacity: 0.7;
-    border-radius: 6px;
-    flex-shrink: 0;
-    transition: opacity 0.15s, transform 0.1s;
-    color: var(--SmartThemeBodyColor, inherit);
+    display: flex; align-items: center; justify-content: center;
+    width: 40px; height: 40px;
+    cursor: pointer; border-radius: 6px; flex-shrink: 0;
+    color: #555; opacity: 0.8;
+    transition: color 0.15s, transform 0.1s;
 }
-#ct_delete_last_btn:hover { opacity: 1; color: #cc3333; transform: scale(1.12); }
-#ct_delete_last_btn:active { transform: scale(0.93); }
+#ct_delete_last_btn:hover { color: #cc2222; opacity: 1; transform: scale(1.12); }
 #ct_delete_last_btn i { font-size: 17px; pointer-events: none; }
 
 /* ── Manager open button ─────────────────────────────────── */
-
 #ct_ext_manager_btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    margin: 6px 8px;
-    padding: 7px 12px;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    margin: 6px 8px; padding: 7px 0;
     width: calc(100% - 16px);
-    border-radius: 8px;
-    font-size: 12px;
-    cursor: pointer;
-    /* Explicit colors — visible on both light and dark */
-    background: #4a6fa5;
-    color: #ffffff;
-    border: none;
-    font-weight: 600;
-    transition: background 0.15s;
+    background: #3a6bc4; color: #fff; border: none;
+    border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer;
 }
-#ct_ext_manager_btn:hover { background: #3a5f95; }
+#ct_ext_manager_btn:hover { background: #2d58a8; }
 
-/* ── Shared button ───────────────────────────────────────── */
-
+/* ── Buttons ─────────────────────────────────────────────── */
 .ct-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    padding: 5px 10px;
-    border-radius: 6px;
-    font-size: 12px;
-    cursor: pointer;
-    white-space: nowrap;
-    transition: background 0.15s, filter 0.15s;
-    border: 1px solid rgba(0,0,0,0.15);
-    background: #e8eaf0;
-    color: #222;
-    font-weight: 500;
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 5px 10px; border-radius: 6px; font-size: 12px;
+    cursor: pointer; white-space: nowrap; font-weight: 500;
+    background: #e4e7ef; color: #1a1a2e; border: 1px solid #b0b8cc;
+    transition: filter 0.15s;
 }
-.ct-btn:hover { filter: brightness(0.92); }
-.ct-btn:disabled { opacity: 0.35; cursor: not-allowed; }
-.ct-btn-sm { padding: 4px 8px; font-size: 11px; }
-.ct-btn-xs { padding: 2px 7px; font-size: 11px; min-width: 28px; justify-content: center; }
-.ct-btn-primary { background: #4a6fa5; color: #fff; border-color: #3a5f95; }
-.ct-btn-primary:hover { filter: brightness(1.1); }
-.ct-btn-danger { background: #c0392b; color: #fff; border-color: #a93226; }
-.ct-btn-danger:hover { filter: brightness(1.1); }
+.ct-btn:hover { filter: brightness(0.9); }
+.ct-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.ct-sm  { padding: 4px 8px; font-size: 11px; }
+.ct-xs  { padding: 2px 6px; font-size: 11px; min-width: 26px; justify-content: center; }
+.ct-primary { background: #3a6bc4; color: #fff; border-color: #2d58a8; }
+.ct-primary:hover { filter: brightness(1.12); }
+.ct-btn-danger { background: #c0392b; color: #fff; border-color: #922b21; }
 
 /* ── Backdrop ────────────────────────────────────────────── */
-
 .ct-backdrop {
-    position: fixed;
-    top: 0; left: 0;
+    position: fixed; top: 0; left: 0;
     width: 100vw; height: 100vh;
-    z-index: 100000;
-    background: rgba(0,0,0,0.5);
+    z-index: 100000; background: rgba(0,0,0,0.5);
 }
 
-/* ── Manager Panel ───────────────────────────────────────── */
-
+/* ── Panel ───────────────────────────────────────────────── */
 #ct_ext_manager {
     position: fixed;
-    top: 8vh;
-    left: 50%;
-    transform: translateX(-50%);
+    top: 6vh; left: 50%; transform: translateX(-50%);
     z-index: 100001;
-    width: 92vw;
-    max-width: 500px;
-    max-height: 84vh;
-    display: flex;
-    flex-direction: column;
-    /* Hard-coded light panel — readable on any ST theme */
-    background: #f4f5f8;
-    border: 1px solid #c0c4d0;
+    width: 92vw; max-width: 480px; max-height: 88vh;
+    display: flex; flex-direction: column;
+    background: #f0f2f8;
+    border: 2px solid #3a6bc4;
     border-radius: 14px;
-    box-shadow: 0 16px 56px rgba(0,0,0,0.45);
+    box-shadow: 0 12px 48px rgba(0,0,0,0.5);
     overflow: hidden;
-    color: #1a1a2e;
     font-size: 13px;
+    /* Hard override — no blur, no transparency */
+    opacity: 1 !important;
+    backdrop-filter: none !important;
 }
 
 /* Header */
 .ct-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    padding: 12px 14px;
-    background: #e2e5ef;
-    border-bottom: 1px solid #c0c4d0;
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    padding: 11px 13px;
+    background: #dde2f0; border-bottom: 2px solid #3a6bc4;
     flex-shrink: 0;
 }
-.ct-title {
-    display: flex; align-items: center; gap: 8px;
-    font-weight: 700; font-size: 14px; color: #2c3e6e;
-}
-.ct-title i { color: #4a6fa5; }
-.ct-header-btns { display: flex; align-items: center; gap: 6px; }
+.ct-title { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 14px; color: #1a2a5e; }
+.ct-title i { color: #3a6bc4; }
+.ct-hbtns { display: flex; align-items: center; gap: 5px; }
 
-/* Scrollable body */
+/* Body */
 .ct-body {
-    flex: 1;
-    overflow-y: auto;
-    padding: 10px 12px 16px;
-    background: #f4f5f8;
+    flex: 1; overflow-y: auto; padding: 10px 11px 14px;
+    background: #f0f2f8;
 }
-.ct-body::-webkit-scrollbar { width: 5px; }
-.ct-body::-webkit-scrollbar-thumb { background: #c0c4d0; border-radius: 3px; }
+.ct-body::-webkit-scrollbar { width: 4px; }
+.ct-body::-webkit-scrollbar-thumb { background: #b0b8d0; border-radius: 2px; }
 
-/* Section labels */
-.ct-section-label {
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.07em;
-    text-transform: uppercase;
-    color: #7a8099;
-    margin-bottom: 7px;
-    margin-top: 4px;
+/* Debug line */
+.ct-debug {
+    font-size: 10px; color: #5566aa; background: #e2e6f4;
+    border: 1px solid #b0bcdc; border-radius: 5px;
+    padding: 3px 8px; margin-bottom: 8px;
 }
-.ct-hint { font-size: 9px; font-weight: 400; text-transform: none; letter-spacing: 0; color: #9aa0b5; }
-.ct-empty { font-size: 11px; color: #aab0c5; font-style: italic; padding: 2px 0 8px; }
 
-/* Group rows */
-.ct-group-row {
-    display: flex; align-items: center; gap: 8px;
-    padding: 6px 10px;
-    margin-bottom: 4px;
-    background: #fff8ec;
-    border: 1px solid #e0c87a;
-    border-radius: 7px;
-    color: #5a4010;
+/* Labels */
+.ct-label {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.06em;
+    text-transform: uppercase; color: #5566aa; margin-bottom: 6px;
 }
-.ct-folder-icon { color: #b08020; font-size: 13px; flex-shrink: 0; }
 
-/* Extension rows */
-.ct-ext-row {
-    display: flex; align-items: center; gap: 6px;
-    padding: 6px 8px;
-    margin-bottom: 3px;
-    background: #ffffff;
-    border: 1px solid #d0d4e0;
-    border-radius: 7px;
-    color: #1a1a2e;
-    transition: background 0.12s;
+/* Rows */
+.ct-row {
+    display: flex; align-items: center; gap: 5px;
+    padding: 7px 8px; margin-bottom: 3px;
+    border-radius: 8px; border: 1px solid #c8cede;
 }
-.ct-ext-row:hover { background: #eef0f8; }
-.ct-ext-grouped {
-    border-left: 3px solid #4a6fa5;
-    background: #eef3fb;
-}
-.ct-ext-name {
+.ct-ext-row  { background: #ffffff; color: #1a1a2e; }
+.ct-ext-row:hover { background: #eef0fa; }
+.ct-grouped  { border-left: 3px solid #3a6bc4; background: #eaf0ff; }
+.ct-group-row { background: #fff8e6; border-color: #d4aa44; color: #4a3000; }
+.ct-group-row:hover { background: #fff3d0; }
+
+.ct-name {
     font-size: 12px; font-weight: 500;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    max-width: 150px;
-    color: #1a1a2e;
+    max-width: 140px; color: inherit;
+    /* Kill any inherited text-shadow */
+    text-shadow: none !important;
 }
-.ct-badge {
-    display: inline-flex; align-items: center;
-    padding: 1px 7px;
-    background: #ddeaff;
-    border: 1px solid #4a6fa5;
-    border-radius: 20px;
-    font-size: 10px; color: #2c4f8c;
-    white-space: nowrap; flex-shrink: 0;
-}
-.ct-dim { color: #8090b8; font-size: 12px; flex-shrink: 0; }
-.ct-spacer { flex: 1; min-width: 4px; }
-
-/* Group select dropdown */
-.ct-select {
-    background: #fff;
-    border: 1px solid #b0b8cc;
-    border-radius: 5px;
-    color: #1a1a2e;
-    font-size: 11px;
-    padding: 2px 4px;
-    max-width: 90px;
-    cursor: pointer;
-    flex-shrink: 0;
-}
-.ct-select:focus { outline: none; border-color: #4a6fa5; }
-
-/* ── Group headers in ST panel ───────────────────────────── */
-
-.ct-group-header {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 7px 10px 4px;
-    margin-top: 6px;
-    font-size: 11px;
-    font-weight: 700;
-    color: #8a6010;
-    border-top: 2px solid #e0c060;
-    cursor: pointer;
-    user-select: none;
-    background: transparent;
-}
-.ct-group-header:hover { color: #6a4800; }
-.ct-group-header i { font-size: 13px; color: #b08020; }
-.ct-collapse-hint {
-    margin-left: auto;
-    font-size: 10px;
-    font-weight: 400;
-    color: #b09040;
+.ct-icon-ext    { color: #6680cc; font-size: 13px; flex-shrink: 0; }
+.ct-icon-folder { color: #b08020; font-size: 13px; flex-shrink: 0; }
+.ct-spacer { flex: 1; }
+.ct-badge-group {
+    font-size: 10px; padding: 1px 6px;
+    background: #ffe8a0; border: 1px solid #d4aa44; border-radius: 12px; color: #6a4800;
 }
 
-/* ── Remove ST default text-shadow from extension names ─── */
+/* Select */
+.ct-sel {
+    background: #fff; border: 1px solid #aab0cc; border-radius: 5px;
+    color: #1a1a2e; font-size: 11px; padding: 2px 4px;
+    max-width: 80px; cursor: pointer; flex-shrink: 0;
+    text-shadow: none !important;
+}
+
+/* ── Group headers injected in ST panel ──────────────────── */
+.ct-group-header-injected {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 10px 3px; margin-top: 5px;
+    font-size: 11px; font-weight: 700;
+    color: #8a5f00; border-top: 2px solid #d4aa44;
+    cursor: pointer; user-select: none;
+    text-shadow: none !important;
+}
+.ct-group-header-injected:hover { color: #5a3c00; }
+.ct-group-header-injected i { color: #b08020; }
+.ct-collapse-hint { margin-left: auto; font-size: 10px; color: #b08a20; font-weight: 400; }
+
+/* ── Kill ST's text-shadow on extension names ────────────── */
 #extensions_settings .inline-drawer-toggle b,
 #extensions_settings .inline-drawer-toggle span,
-#extensions_settings .inline-drawer-toggle {
+#extensions_settings .inline-drawer-toggle,
+.inline-drawer-toggle b {
     text-shadow: none !important;
+    filter: none !important;
 }
