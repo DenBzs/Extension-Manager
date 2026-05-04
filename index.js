@@ -58,20 +58,13 @@ function injectDeleteButton() {
 function readLiveExtensions() {
     const container = document.getElementById('extensions_settings');
     if (!container) return [];
-    // Only top-level .inline-drawer elements (not nested ones inside other drawers)
-    // A top-level one's parent is either #extensions_settings itself,
-    // or a direct wrapper div inside it (not another .inline-drawer)
+    // Grab every .inline-drawer that is NOT nested inside another .inline-drawer
+    // (i.e. its closest .inline-drawer ancestor is itself)
     return Array.from(container.querySelectorAll('.inline-drawer'))
-        .filter(el => {
-            const parent = el.parentElement;
-            // Direct child of container
-            if (parent === container) return true;
-            // Child of a non-drawer direct child of container (e.g. a wrapper div)
-            if (parent.parentElement === container && !parent.classList.contains('inline-drawer')) return true;
-            return false;
-        })
+        .filter(el => el.parentElement.closest('.inline-drawer') === null)
         .map(el => {
-            const b = el.querySelector(':scope > .inline-drawer-toggle b');
+            // The name <b> tag is inside .inline-drawer-toggle (anywhere inside)
+            const b = el.querySelector('.inline-drawer-toggle b');
             return b ? b.textContent.trim() : '';
         })
         .filter(Boolean);
