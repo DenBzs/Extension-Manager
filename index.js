@@ -4,7 +4,7 @@
 // Feature 2: Extension panel reorder + grouping
 // ============================================================
 
-const MODULE_NAME = 'Extension-manager';
+const MODULE_NAME = 'chat_tools';
 
 // ── Helpers ──────────────────────────────────────────────────
 
@@ -193,9 +193,9 @@ function renderManagerPanel() {
     const backdrop = document.createElement('div');
     backdrop.id = 'ct_ext_manager_backdrop';
     backdrop.addEventListener('click', closeManagerPanel);
-    document.documentElement.appendChild(backdrop);
+    document.body.appendChild(backdrop);
 
-    document.documentElement.appendChild(panel);
+    document.body.appendChild(panel);
     managerPanel = panel;
 
     // ── Events ──
@@ -272,8 +272,6 @@ function buildExtensionRow(entry, idx, settings) {
         </div>`;
 
     return row;
-}
-
 }
 
 function promptAddGroup() {
