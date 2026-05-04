@@ -2,7 +2,7 @@
 // ST Chat Tools - index.js  v2.0
 // ============================================================
 
-const MODULE_NAME = 'Extension-Manager';
+const MODULE_NAME = 'chat_tools';
 
 function getCtx() { return SillyTavern.getContext(); }
 
@@ -58,9 +58,20 @@ function injectDeleteButton() {
 function readLiveExtensions() {
     const container = document.getElementById('extensions_settings');
     if (!container) return [];
-    return Array.from(container.querySelectorAll(':scope > .inline-drawer'))
+    // Only top-level .inline-drawer elements (not nested ones inside other drawers)
+    // A top-level one's parent is either #extensions_settings itself,
+    // or a direct wrapper div inside it (not another .inline-drawer)
+    return Array.from(container.querySelectorAll('.inline-drawer'))
+        .filter(el => {
+            const parent = el.parentElement;
+            // Direct child of container
+            if (parent === container) return true;
+            // Child of a non-drawer direct child of container (e.g. a wrapper div)
+            if (parent.parentElement === container && !parent.classList.contains('inline-drawer')) return true;
+            return false;
+        })
         .map(el => {
-            const b = el.querySelector('.inline-drawer-toggle b');
+            const b = el.querySelector(':scope > .inline-drawer-toggle b');
             return b ? b.textContent.trim() : '';
         })
         .filter(Boolean);
@@ -232,9 +243,11 @@ function applyToDOM() {
         return;
     }
 
-    // Map name → element
+    // Map name → element (handle both direct children and wrapped structures)
     const nameToEl = {};
-    container.querySelectorAll(':scope > .inline-drawer').forEach(el => {
+    container.querySelectorAll('.inline-drawer').forEach(el => {
+        // Skip nested drawers (e.g. drawers inside extension settings)
+        if (el.closest('.inline-drawer-content')) return;
         const b = el.querySelector('.inline-drawer-toggle b');
         if (b) nameToEl[b.textContent.trim()] = el;
     });
