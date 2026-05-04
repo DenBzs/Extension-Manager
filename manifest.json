@@ -8,6 +8,6 @@
     "css": "style.css",
     "author": "custom",
     "version": "1.0.0",
-    "homePage": "",
+    "homePage": "https://github.com/DenBzs/Extension-Manager",
     "auto_update": false
 }
