@@ -1,8 +1,8 @@
 /* ============================================================
-   ST Chat Tools — style.css
+   ST Chat Tools — style.css  v2.0
    ============================================================ */
 
-/* ── Delete Last Message Button ─────────────────────────── */
+/* ── Delete Button ───────────────────────────────────────── */
 
 #ct_delete_last_btn {
     display: flex;
@@ -12,26 +12,34 @@
     height: 40px;
     cursor: pointer;
     color: var(--SmartThemeBodyColor, #ccc);
-    opacity: 0.75;
-    transition: opacity 0.15s, color 0.15s, transform 0.1s;
+    opacity: 0.7;
     border-radius: 6px;
     flex-shrink: 0;
+    transition: opacity 0.15s, color 0.15s, transform 0.1s;
 }
+#ct_delete_last_btn:hover { opacity: 1; color: #e05c5c; transform: scale(1.12); }
+#ct_delete_last_btn:active { transform: scale(0.93); }
+#ct_delete_last_btn i { font-size: 17px; pointer-events: none; }
 
-#ct_delete_last_btn:hover {
-    opacity: 1;
-    color: #e05c5c;
-    transform: scale(1.12);
-}
+/* ── Manager open button (in Extensions panel) ───────────── */
 
-#ct_delete_last_btn:active {
-    transform: scale(0.95);
+#ct_ext_manager_btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin: 6px 8px;
+    padding: 7px 12px;
+    width: calc(100% - 16px);
+    border: 1px solid rgba(100,140,255,0.35);
+    border-radius: 8px;
+    background: rgba(80,120,255,0.13);
+    color: #a0b8ff;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background 0.15s;
 }
-
-#ct_delete_last_btn i {
-    font-size: 17px;
-    pointer-events: none;
-}
+#ct_ext_manager_btn:hover { background: rgba(80,120,255,0.25); }
 
 /* ── Shared button styles ────────────────────────────────── */
 
@@ -40,301 +48,171 @@
     align-items: center;
     gap: 5px;
     padding: 5px 10px;
-    border: 1px solid var(--SmartThemeBorderColor, rgba(255,255,255,0.15));
+    border: 1px solid var(--SmartThemeBorderColor, rgba(255,255,255,0.18));
     border-radius: 6px;
-    background: var(--SmartThemeBlurTintColor, rgba(255,255,255,0.06));
+    background: rgba(255,255,255,0.06);
     color: var(--SmartThemeBodyColor, #ccc);
     font-size: 12px;
     cursor: pointer;
-    transition: background 0.15s, border-color 0.15s, opacity 0.15s;
     white-space: nowrap;
+    transition: background 0.15s;
 }
+.ct-btn:hover { background: rgba(255,255,255,0.13); }
+.ct-btn:disabled { opacity: 0.28; cursor: not-allowed; }
+.ct-btn-sm { padding: 4px 8px; font-size: 11px; }
+.ct-btn-xs { padding: 2px 7px; font-size: 11px; }
+.ct-btn-primary { background: rgba(80,160,255,0.22); border-color: rgba(80,160,255,0.45); color: #8dcfff; }
+.ct-btn-primary:hover { background: rgba(80,160,255,0.36); }
+.ct-btn-danger { background: rgba(220,70,70,0.18); border-color: rgba(220,70,70,0.4); color: #e08888; }
+.ct-btn-danger:hover { background: rgba(220,70,70,0.32); }
 
-.ct-btn:hover {
-    background: var(--SmartThemeBlurTintColor, rgba(255,255,255,0.12));
-    border-color: var(--SmartThemeBorderColor, rgba(255,255,255,0.3));
-}
+/* ── Backdrop — one instance, no stacking ────────────────── */
 
-.ct-btn:disabled {
-    opacity: 0.3;
-    cursor: not-allowed;
-}
-
-.ct-btn-primary {
-    background: rgba(80, 160, 255, 0.25);
-    border-color: rgba(80, 160, 255, 0.5);
-    color: #8dcfff;
-}
-
-.ct-btn-primary:hover {
-    background: rgba(80, 160, 255, 0.38);
-}
-
-.ct-btn-danger {
-    background: rgba(220, 80, 80, 0.18);
-    border-color: rgba(220, 80, 80, 0.4);
-    color: #e08888;
-}
-
-.ct-btn-danger:hover {
-    background: rgba(220, 80, 80, 0.32);
-}
-
-.ct-btn-sm {
-    padding: 4px 8px;
-    font-size: 11px;
-}
-
-.ct-btn-xs {
-    padding: 2px 6px;
-    font-size: 11px;
-    min-width: 26px;
-    justify-content: center;
-}
-
-/* ── Extension Manager open button ──────────────────────── */
-
-.ct-ext-manager-open-btn {
-    margin: 8px 8px 4px 8px;
-    width: calc(100% - 16px);
-    justify-content: center;
-    font-size: 12px;
-    background: rgba(80, 120, 255, 0.15);
-    border-color: rgba(80, 120, 255, 0.35);
-    color: #a0b8ff;
-}
-
-.ct-ext-manager-open-btn:hover {
-    background: rgba(80, 120, 255, 0.28);
+.ct-backdrop {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100vw; height: 100vh;
+    z-index: 100000;
+    background: rgba(0,0,0,0.55);
 }
 
 /* ── Manager Panel ───────────────────────────────────────── */
 
-/* Backdrop overlay — covers everything including ST transforms */
-#ct_ext_manager_backdrop {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    z-index: 100000;
-    background: rgba(0, 0, 0, 0.6);
-}
-
-/* Panel — always centered in the viewport */
 #ct_ext_manager {
     position: fixed;
-    top: 10vh;
+    top: 8vh;
     left: 50%;
     transform: translateX(-50%);
     z-index: 100001;
-
     width: 92vw;
-    max-width: 520px;
-    max-height: 80vh;
-
+    max-width: 500px;
+    max-height: 84vh;
     display: flex;
     flex-direction: column;
-    background: var(--SmartThemeBlurTintColor, #23263a);
-    border: 1px solid var(--SmartThemeBorderColor, rgba(255,255,255,0.15));
+    background: var(--SmartThemeBlurTintColor, #20233a);
+    border: 1px solid var(--SmartThemeBorderColor, rgba(255,255,255,0.14));
     border-radius: 14px;
-    box-shadow: 0 12px 48px rgba(0,0,0,0.7);
+    box-shadow: 0 16px 56px rgba(0,0,0,0.75);
     overflow: hidden;
-    font-size: 13px;
     color: var(--SmartThemeBodyColor, #ccc);
+    font-size: 13px;
 }
 
 /* Header */
-.ct-manager-header {
+.ct-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 8px;
     padding: 12px 14px;
-    background: rgba(0,0,0,0.2);
-    border-bottom: 1px solid var(--SmartThemeBorderColor, rgba(255,255,255,0.1));
-    flex-shrink: 0;
-    font-weight: 600;
-    font-size: 14px;
-    gap: 8px;
-}
-
-.ct-manager-header > span {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    color: #a8c0ff;
-}
-
-.ct-manager-header-actions {
-    display: flex;
-    align-items: center;
-    gap: 6px;
+    background: rgba(0,0,0,0.22);
+    border-bottom: 1px solid rgba(255,255,255,0.08);
     flex-shrink: 0;
 }
-
-/* Section label */
-.ct-section-label {
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: rgba(170,185,230,0.55);
-    padding: 8px 14px 4px;
+.ct-title {
+    display: flex; align-items: center; gap: 8px;
+    font-weight: 700; font-size: 14px; color: #a8c0ff;
 }
+.ct-header-btns { display: flex; align-items: center; gap: 6px; }
 
-/* Group area */
-.ct-group-area {
-    border-bottom: 1px solid var(--SmartThemeBorderColor, rgba(255,255,255,0.1));
-    padding-bottom: 8px;
-    flex-shrink: 0;
-}
-
-.ct-empty-hint {
-    font-size: 11px;
-    color: rgba(160,170,200,0.45);
-    padding: 4px 14px 8px;
-    font-style: italic;
-}
-
-.ct-group-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 5px 14px;
-    border-radius: 6px;
-    margin: 2px 8px;
-    background: rgba(100,120,200,0.08);
-    border: 1px solid rgba(100,120,200,0.18);
-}
-
-.ct-group-icon {
-    color: #c0a060;
-    font-size: 13px;
-    flex-shrink: 0;
-}
-
-.ct-group-name {
-    flex: 1;
-    font-weight: 500;
-}
-
-/* Extension list */
-.ct-ext-list-area {
+/* Scrollable body */
+.ct-body {
     flex: 1;
     overflow-y: auto;
-    padding-bottom: 10px;
+    padding: 10px 12px 14px;
 }
+.ct-body::-webkit-scrollbar { width: 4px; }
+.ct-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 2px; }
 
-.ct-ext-list-area::-webkit-scrollbar {
-    width: 5px;
-}
-.ct-ext-list-area::-webkit-scrollbar-thumb {
-    background: rgba(255,255,255,0.12);
-    border-radius: 3px;
-}
-
-.ct-ext-row {
-    margin: 3px 8px;
-    border-radius: 7px;
-    border: 1px solid var(--SmartThemeBorderColor, rgba(255,255,255,0.09));
-    background: rgba(255,255,255,0.03);
-    transition: background 0.15s, border-color 0.15s;
-}
-
-.ct-ext-row:hover {
-    background: rgba(255,255,255,0.06);
-    border-color: rgba(255,255,255,0.16);
-}
-
-.ct-ext-grouped {
-    border-left: 3px solid rgba(100,160,255,0.5);
-    background: rgba(80,120,255,0.06);
-}
-
-.ct-ext-row-main {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    padding: 6px 10px;
-}
-
-.ct-ext-info {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex: 1;
-    min-width: 0;
-}
-
-.ct-ext-icon {
-    color: rgba(160,180,255,0.55);
-    font-size: 12px;
-    flex-shrink: 0;
-}
-
-.ct-ext-name {
-    font-size: 12px;
-    font-weight: 500;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 180px;
-}
-
-.ct-group-badge {
-    display: inline-flex;
-    align-items: center;
-    padding: 1px 7px;
-    background: rgba(100,160,255,0.2);
-    border: 1px solid rgba(100,160,255,0.35);
-    border-radius: 20px;
-    font-size: 10px;
-    color: #90c0ff;
-    white-space: nowrap;
-    flex-shrink: 0;
-}
-
-.ct-ext-controls {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    flex-shrink: 0;
-}
-
-/* Group select */
-.ct-select {
-    background: var(--SmartThemeBlurTintColor, rgba(0,0,0,0.3));
-    border: 1px solid var(--SmartThemeBorderColor, rgba(255,255,255,0.15));
-    border-radius: 5px;
-    color: var(--SmartThemeBodyColor, #ccc);
-    font-size: 11px;
-    padding: 2px 5px;
-    cursor: pointer;
-    max-width: 120px;
-}
-
-.ct-select:focus {
-    outline: none;
-    border-color: rgba(100,160,255,0.5);
-}
-
-/* Group header dividers in Extensions panel */
-.ct-group-header {
-    display: flex;
-    align-items: center;
-    gap: 7px;
-    padding: 6px 10px 3px;
+/* Section labels */
+.ct-section-label {
     font-size: 10px;
     font-weight: 700;
     letter-spacing: 0.07em;
     text-transform: uppercase;
-    color: #c0a060;
-    border-top: 1px solid rgba(192, 160, 96, 0.25);
-    margin-top: 4px;
+    color: rgba(170,185,230,0.5);
+    margin-bottom: 6px;
 }
+.ct-hint { font-size: 9px; font-weight: 400; text-transform: none; letter-spacing: 0; color: rgba(160,180,220,0.4); }
+.ct-empty { font-size: 11px; color: rgba(160,170,200,0.4); font-style: italic; padding: 2px 0 8px; }
 
-.ct-group-header i {
+/* Group rows */
+.ct-group-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 10px;
+    margin-bottom: 4px;
+    background: rgba(200,160,80,0.08);
+    border: 1px solid rgba(200,160,80,0.2);
+    border-radius: 7px;
+}
+.ct-folder-icon { color: #c0a060; font-size: 13px; flex-shrink: 0; }
+
+/* Extension rows */
+.ct-ext-row {
+    display: flex; align-items: center; gap: 6px;
+    padding: 6px 8px;
+    margin-bottom: 3px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 7px;
+    transition: background 0.12s;
+}
+.ct-ext-row:hover { background: rgba(255,255,255,0.07); }
+.ct-ext-grouped {
+    border-left: 3px solid rgba(100,160,255,0.5);
+    background: rgba(80,120,255,0.06);
+}
+.ct-ext-name {
+    font-size: 12px; font-weight: 500;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    max-width: 160px;
+}
+.ct-badge {
+    display: inline-flex; align-items: center;
+    padding: 1px 7px;
+    background: rgba(100,160,255,0.2);
+    border: 1px solid rgba(100,160,255,0.35);
+    border-radius: 20px;
+    font-size: 10px; color: #90c0ff;
+    white-space: nowrap; flex-shrink: 0;
+}
+.ct-dim { color: rgba(160,180,255,0.4); font-size: 12px; flex-shrink: 0; }
+.ct-spacer { flex: 1; }
+
+/* Group select */
+.ct-select {
+    background: rgba(0,0,0,0.3);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 5px;
+    color: var(--SmartThemeBodyColor, #ccc);
     font-size: 11px;
+    padding: 2px 4px;
+    max-width: 100px;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+.ct-select:focus { outline: none; border-color: rgba(100,160,255,0.5); }
+
+/* ── Group headers injected into ST Extensions panel ─────── */
+
+.ct-group-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 10px 4px;
+    margin-top: 6px;
+    font-size: 11px;
+    font-weight: 700;
     color: #c0a060;
+    border-top: 1px solid rgba(192,160,96,0.25);
+    cursor: pointer;
+    user-select: none;
+}
+.ct-group-header:hover { color: #d4b870; }
+.ct-group-header i { font-size: 13px; }
+.ct-collapse-hint {
+    margin-left: auto;
+    font-size: 10px;
+    font-weight: 400;
+    color: rgba(192,160,96,0.6);
 }
