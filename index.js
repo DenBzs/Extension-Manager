@@ -4,7 +4,7 @@
 // Feature 2: Extension panel reorder + grouping
 // ============================================================
 
-const MODULE_NAME = 'Extension-Manager';
+const MODULE_NAME = 'Extension-manager';
 
 // ── Helpers ──────────────────────────────────────────────────
 
@@ -193,9 +193,9 @@ function renderManagerPanel() {
     const backdrop = document.createElement('div');
     backdrop.id = 'ct_ext_manager_backdrop';
     backdrop.addEventListener('click', closeManagerPanel);
-    document.body.appendChild(backdrop);
+    document.documentElement.appendChild(backdrop);
 
-    document.body.appendChild(panel);
+    document.documentElement.appendChild(panel);
     managerPanel = panel;
 
     // ── Events ──
@@ -274,6 +274,7 @@ function buildExtensionRow(entry, idx, settings) {
     return row;
 }
 
+}
 
 function promptAddGroup() {
     const settings = getSettings();
