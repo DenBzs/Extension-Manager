@@ -1,5 +1,6 @@
 /* ============================================================
-   ST Chat Tools — style.css  v2.0
+   ST Chat Tools — style.css  v2.1
+   Works on both light and dark ST themes
    ============================================================ */
 
 /* ── Delete Button ───────────────────────────────────────── */
@@ -11,17 +12,17 @@
     width: 40px;
     height: 40px;
     cursor: pointer;
-    color: var(--SmartThemeBodyColor, #ccc);
     opacity: 0.7;
     border-radius: 6px;
     flex-shrink: 0;
-    transition: opacity 0.15s, color 0.15s, transform 0.1s;
+    transition: opacity 0.15s, transform 0.1s;
+    color: var(--SmartThemeBodyColor, inherit);
 }
-#ct_delete_last_btn:hover { opacity: 1; color: #e05c5c; transform: scale(1.12); }
+#ct_delete_last_btn:hover { opacity: 1; color: #cc3333; transform: scale(1.12); }
 #ct_delete_last_btn:active { transform: scale(0.93); }
 #ct_delete_last_btn i { font-size: 17px; pointer-events: none; }
 
-/* ── Manager open button (in Extensions panel) ───────────── */
+/* ── Manager open button ─────────────────────────────────── */
 
 #ct_ext_manager_btn {
     display: flex;
@@ -31,49 +32,52 @@
     margin: 6px 8px;
     padding: 7px 12px;
     width: calc(100% - 16px);
-    border: 1px solid rgba(100,140,255,0.35);
     border-radius: 8px;
-    background: rgba(80,120,255,0.13);
-    color: #a0b8ff;
     font-size: 12px;
     cursor: pointer;
+    /* Explicit colors — visible on both light and dark */
+    background: #4a6fa5;
+    color: #ffffff;
+    border: none;
+    font-weight: 600;
     transition: background 0.15s;
 }
-#ct_ext_manager_btn:hover { background: rgba(80,120,255,0.25); }
+#ct_ext_manager_btn:hover { background: #3a5f95; }
 
-/* ── Shared button styles ────────────────────────────────── */
+/* ── Shared button ───────────────────────────────────────── */
 
 .ct-btn {
     display: inline-flex;
     align-items: center;
-    gap: 5px;
+    gap: 4px;
     padding: 5px 10px;
-    border: 1px solid var(--SmartThemeBorderColor, rgba(255,255,255,0.18));
     border-radius: 6px;
-    background: rgba(255,255,255,0.06);
-    color: var(--SmartThemeBodyColor, #ccc);
     font-size: 12px;
     cursor: pointer;
     white-space: nowrap;
-    transition: background 0.15s;
+    transition: background 0.15s, filter 0.15s;
+    border: 1px solid rgba(0,0,0,0.15);
+    background: #e8eaf0;
+    color: #222;
+    font-weight: 500;
 }
-.ct-btn:hover { background: rgba(255,255,255,0.13); }
-.ct-btn:disabled { opacity: 0.28; cursor: not-allowed; }
+.ct-btn:hover { filter: brightness(0.92); }
+.ct-btn:disabled { opacity: 0.35; cursor: not-allowed; }
 .ct-btn-sm { padding: 4px 8px; font-size: 11px; }
-.ct-btn-xs { padding: 2px 7px; font-size: 11px; }
-.ct-btn-primary { background: rgba(80,160,255,0.22); border-color: rgba(80,160,255,0.45); color: #8dcfff; }
-.ct-btn-primary:hover { background: rgba(80,160,255,0.36); }
-.ct-btn-danger { background: rgba(220,70,70,0.18); border-color: rgba(220,70,70,0.4); color: #e08888; }
-.ct-btn-danger:hover { background: rgba(220,70,70,0.32); }
+.ct-btn-xs { padding: 2px 7px; font-size: 11px; min-width: 28px; justify-content: center; }
+.ct-btn-primary { background: #4a6fa5; color: #fff; border-color: #3a5f95; }
+.ct-btn-primary:hover { filter: brightness(1.1); }
+.ct-btn-danger { background: #c0392b; color: #fff; border-color: #a93226; }
+.ct-btn-danger:hover { filter: brightness(1.1); }
 
-/* ── Backdrop — one instance, no stacking ────────────────── */
+/* ── Backdrop ────────────────────────────────────────────── */
 
 .ct-backdrop {
     position: fixed;
     top: 0; left: 0;
     width: 100vw; height: 100vh;
     z-index: 100000;
-    background: rgba(0,0,0,0.55);
+    background: rgba(0,0,0,0.5);
 }
 
 /* ── Manager Panel ───────────────────────────────────────── */
@@ -89,12 +93,13 @@
     max-height: 84vh;
     display: flex;
     flex-direction: column;
-    background: var(--SmartThemeBlurTintColor, #20233a);
-    border: 1px solid var(--SmartThemeBorderColor, rgba(255,255,255,0.14));
+    /* Hard-coded light panel — readable on any ST theme */
+    background: #f4f5f8;
+    border: 1px solid #c0c4d0;
     border-radius: 14px;
-    box-shadow: 0 16px 56px rgba(0,0,0,0.75);
+    box-shadow: 0 16px 56px rgba(0,0,0,0.45);
     overflow: hidden;
-    color: var(--SmartThemeBodyColor, #ccc);
+    color: #1a1a2e;
     font-size: 13px;
 }
 
@@ -105,24 +110,26 @@
     justify-content: space-between;
     gap: 8px;
     padding: 12px 14px;
-    background: rgba(0,0,0,0.22);
-    border-bottom: 1px solid rgba(255,255,255,0.08);
+    background: #e2e5ef;
+    border-bottom: 1px solid #c0c4d0;
     flex-shrink: 0;
 }
 .ct-title {
     display: flex; align-items: center; gap: 8px;
-    font-weight: 700; font-size: 14px; color: #a8c0ff;
+    font-weight: 700; font-size: 14px; color: #2c3e6e;
 }
+.ct-title i { color: #4a6fa5; }
 .ct-header-btns { display: flex; align-items: center; gap: 6px; }
 
 /* Scrollable body */
 .ct-body {
     flex: 1;
     overflow-y: auto;
-    padding: 10px 12px 14px;
+    padding: 10px 12px 16px;
+    background: #f4f5f8;
 }
-.ct-body::-webkit-scrollbar { width: 4px; }
-.ct-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 2px; }
+.ct-body::-webkit-scrollbar { width: 5px; }
+.ct-body::-webkit-scrollbar-thumb { background: #c0c4d0; border-radius: 3px; }
 
 /* Section labels */
 .ct-section-label {
@@ -130,70 +137,74 @@
     font-weight: 700;
     letter-spacing: 0.07em;
     text-transform: uppercase;
-    color: rgba(170,185,230,0.5);
-    margin-bottom: 6px;
+    color: #7a8099;
+    margin-bottom: 7px;
+    margin-top: 4px;
 }
-.ct-hint { font-size: 9px; font-weight: 400; text-transform: none; letter-spacing: 0; color: rgba(160,180,220,0.4); }
-.ct-empty { font-size: 11px; color: rgba(160,170,200,0.4); font-style: italic; padding: 2px 0 8px; }
+.ct-hint { font-size: 9px; font-weight: 400; text-transform: none; letter-spacing: 0; color: #9aa0b5; }
+.ct-empty { font-size: 11px; color: #aab0c5; font-style: italic; padding: 2px 0 8px; }
 
 /* Group rows */
 .ct-group-row {
     display: flex; align-items: center; gap: 8px;
     padding: 6px 10px;
     margin-bottom: 4px;
-    background: rgba(200,160,80,0.08);
-    border: 1px solid rgba(200,160,80,0.2);
+    background: #fff8ec;
+    border: 1px solid #e0c87a;
     border-radius: 7px;
+    color: #5a4010;
 }
-.ct-folder-icon { color: #c0a060; font-size: 13px; flex-shrink: 0; }
+.ct-folder-icon { color: #b08020; font-size: 13px; flex-shrink: 0; }
 
 /* Extension rows */
 .ct-ext-row {
     display: flex; align-items: center; gap: 6px;
     padding: 6px 8px;
     margin-bottom: 3px;
-    background: rgba(255,255,255,0.03);
-    border: 1px solid rgba(255,255,255,0.08);
+    background: #ffffff;
+    border: 1px solid #d0d4e0;
     border-radius: 7px;
+    color: #1a1a2e;
     transition: background 0.12s;
 }
-.ct-ext-row:hover { background: rgba(255,255,255,0.07); }
+.ct-ext-row:hover { background: #eef0f8; }
 .ct-ext-grouped {
-    border-left: 3px solid rgba(100,160,255,0.5);
-    background: rgba(80,120,255,0.06);
+    border-left: 3px solid #4a6fa5;
+    background: #eef3fb;
 }
 .ct-ext-name {
     font-size: 12px; font-weight: 500;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    max-width: 160px;
+    max-width: 150px;
+    color: #1a1a2e;
 }
 .ct-badge {
     display: inline-flex; align-items: center;
     padding: 1px 7px;
-    background: rgba(100,160,255,0.2);
-    border: 1px solid rgba(100,160,255,0.35);
+    background: #ddeaff;
+    border: 1px solid #4a6fa5;
     border-radius: 20px;
-    font-size: 10px; color: #90c0ff;
+    font-size: 10px; color: #2c4f8c;
     white-space: nowrap; flex-shrink: 0;
 }
-.ct-dim { color: rgba(160,180,255,0.4); font-size: 12px; flex-shrink: 0; }
-.ct-spacer { flex: 1; }
+.ct-dim { color: #8090b8; font-size: 12px; flex-shrink: 0; }
+.ct-spacer { flex: 1; min-width: 4px; }
 
-/* Group select */
+/* Group select dropdown */
 .ct-select {
-    background: rgba(0,0,0,0.3);
-    border: 1px solid rgba(255,255,255,0.15);
+    background: #fff;
+    border: 1px solid #b0b8cc;
     border-radius: 5px;
-    color: var(--SmartThemeBodyColor, #ccc);
+    color: #1a1a2e;
     font-size: 11px;
     padding: 2px 4px;
-    max-width: 100px;
+    max-width: 90px;
     cursor: pointer;
     flex-shrink: 0;
 }
-.ct-select:focus { outline: none; border-color: rgba(100,160,255,0.5); }
+.ct-select:focus { outline: none; border-color: #4a6fa5; }
 
-/* ── Group headers injected into ST Extensions panel ─────── */
+/* ── Group headers in ST panel ───────────────────────────── */
 
 .ct-group-header {
     display: flex;
@@ -203,16 +214,17 @@
     margin-top: 6px;
     font-size: 11px;
     font-weight: 700;
-    color: #c0a060;
-    border-top: 1px solid rgba(192,160,96,0.25);
+    color: #8a6010;
+    border-top: 2px solid #e0c060;
     cursor: pointer;
     user-select: none;
+    background: transparent;
 }
-.ct-group-header:hover { color: #d4b870; }
-.ct-group-header i { font-size: 13px; }
+.ct-group-header:hover { color: #6a4800; }
+.ct-group-header i { font-size: 13px; color: #b08020; }
 .ct-collapse-hint {
     margin-left: auto;
     font-size: 10px;
     font-weight: 400;
-    color: rgba(192,160,96,0.6);
+    color: #b09040;
 }
