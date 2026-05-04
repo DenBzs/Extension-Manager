@@ -274,7 +274,6 @@ function buildExtensionRow(entry, idx, settings) {
     return row;
 }
 
-}
 
 function promptAddGroup() {
     const settings = getSettings();
